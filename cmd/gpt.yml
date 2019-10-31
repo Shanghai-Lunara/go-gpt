@@ -1,0 +1,12 @@
+# This is the configuration file for the go-gpt.
+
+
+HttpListener:
+  ip: "0.0.0.0"
+  port: 80
+
+LogFile: "gpt.log"
+
+Projects:
+  - ["p1", "/Users/nevermore/go/src/go-gpt", "/svn"]
+  - ["p2", "/Users/nevermore/go/src/go-notification", "/svn"]
