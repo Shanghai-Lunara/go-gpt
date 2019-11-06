@@ -1,4 +1,32 @@
 #!/usr/bin/env bash
 
-cd /Users/nevermore/go/src/go-notification
-git branch -a | grep \*
+function showAll() {
+    git branch -a
+}
+
+function showActive() {
+    git branch -a | grep \*
+}
+
+if [[ -z "$1" ]] || [[ -z "$2" ]]; then
+	echo "Usage: git.sh {all|act} version"
+	exit
+fi
+cd "$1"
+case "$2" in
+	"all")
+        showAll $1 $2
+		;;
+	"act")
+		showActive
+		;;
+	"check")
+	    ;;
+	*)
+		echo "Usage: git.sh {all|act} version"
+		exit
+		;;
+esac
+
+
+

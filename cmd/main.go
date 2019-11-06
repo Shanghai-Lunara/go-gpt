@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"go-gpt/conf"
 	"log"
 	"os/exec"
@@ -13,9 +14,9 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println(conf.GetConfig())
-	if out, err := exec.Command("sh", "../scripts/git.sh").Output(); err != nil {
+	if out, err := exec.Command("sh", "../scripts/git.sh", "/Users/nevermore/Documents/saga/hero", "all").Output(); err != nil {
 		log.Println(err)
 	} else {
-		log.Println(string(out))
+		fmt.Println(string(out))
 	}
 }
