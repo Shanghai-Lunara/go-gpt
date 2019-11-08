@@ -13,9 +13,10 @@ type ProjectsConfig struct {
 }
 
 type Config struct {
-	LogFile    string         `yaml:"LogFile"`
-	Projects   ProjectsConfig `yaml:",inline"`
-	ConfigPath string
+	LogFile        string `yaml:"LogFile"`
+	ScriptsPath    string `yaml:"ScriptsPath"`
+	ProjectsConfig `yaml:",inline"`
+	ConfigPath     string
 }
 
 var (

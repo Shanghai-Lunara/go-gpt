@@ -2,10 +2,13 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"go-gpt/conf"
+	"go-gpt/service/logic"
 	"log"
-	"os/exec"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func main() {
@@ -14,9 +17,26 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Println(conf.GetConfig())
-	if out, err := exec.Command("sh", "../scripts/git.sh", "/Users/nevermore/Documents/saga/hero", "all").Output(); err != nil {
-		log.Println(err)
-	} else {
-		fmt.Println(string(out))
+	s := logic.NewService(conf.GetConfig())
+	signalHandler(s)
+}
+
+func signalHandler(s *logic.Service) {
+	var (
+		ch = make(chan os.Signal, 1)
+	)
+	signal.Notify(ch, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
+	for {
+		sig := <-ch
+		log.Printf("get a signal %s, stop the go-gpt serivce \n", sig.String())
+		switch sig {
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+			s.Close()
+			time.Sleep(time.Second)
+			return
+		case syscall.SIGHUP:
+		default:
+			return
+		}
 	}
 }
