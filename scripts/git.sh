@@ -10,7 +10,7 @@ function changeBranch() {
 }
 
 if [[ -z "$1" ]] || [[ -z "$2" ]]; then
-	echo "Usage: git.sh {all|act} version"
+	echo "Usage: git.sh {all|change} version"
 	exit
 fi
 cd "$1"
@@ -21,10 +21,8 @@ case "$2" in
 	"change")
 		changeBranch $3
 		;;
-	"check")
-	    ;;
 	*)
-		echo "Usage: git.sh {all|act} version"
+		echo "Usage: git.sh {all|change} version"
 		exit
 		;;
 esac
