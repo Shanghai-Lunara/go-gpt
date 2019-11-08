@@ -16,7 +16,6 @@ func main() {
 	if err := conf.Init(); err != nil {
 		log.Fatal(err)
 	}
-	log.Println(conf.GetConfig())
 	s := logic.NewService(conf.GetConfig())
 	signalHandler(s)
 }

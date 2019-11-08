@@ -4,8 +4,9 @@ function showAll() {
     git branch -a
 }
 
-function showActive() {
-    git branch -a | grep \*
+function changeBranch() {
+    git checkout $1
+    git pull
 }
 
 if [[ -z "$1" ]] || [[ -z "$2" ]]; then
@@ -15,10 +16,10 @@ fi
 cd "$1"
 case "$2" in
 	"all")
-        showAll $1 $2
+        showAll
 		;;
-	"act")
-		showActive
+	"change")
+		changeBranch $3
 		;;
 	"check")
 	    ;;
