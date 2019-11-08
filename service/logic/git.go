@@ -76,6 +76,13 @@ func (g *Git) CheckOutBranch(name string) (err error) {
 	return nil
 }
 
+func (g *Git) Generator(name string) (err error) {
+	if err = g.CheckOutBranch(name); err != nil {
+		return errors.New(fmt.Sprintf("Generator CheckOutBranch exec.Command name:%s to:`%s` wasn't exist\n", g.Name, name))
+	}
+	return nil
+}
+
 func (s *Service) NewGitHub() *GitHub {
 	g := &GitHub{
 		ScriptPath: fmt.Sprintf("%s%s", s.C.ScriptsPath, "git.sh"),

@@ -9,6 +9,12 @@ function changeBranch() {
     git pull
 }
 
+function generatorData() {
+    cd /tools/gen_const_sheet
+    ./gen_const_sheet.sh
+}
+
+
 if [[ -z "$1" ]] || [[ -z "$2" ]]; then
 	echo "Usage: git.sh {all|change} version"
 	exit
@@ -21,6 +27,9 @@ case "$2" in
 	"change")
 		changeBranch $3
 		;;
+	"gen")
+        generatorData
+	    ;;
 	*)
 		echo "Usage: git.sh {all|change} version"
 		exit
