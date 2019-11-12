@@ -36,16 +36,16 @@ if [[ -z "$1" ]] || [[ -z "$2" ]]; then
 fi
 cd "$1"
 case "$2" in
-	"all")
+    "all")
         showAll
-		;;
-	"checkout")
+        ;;
+    "checkout")
 	    if [[ -z "$3" ]] || [[ -z "$4" ]]; then
 	        error
 	    fi
-		changeBranch $3 $4
+	    changeBranch $3 $4
 		;;
-	"generator")
+    "generator")
         generatorData
 	    ;;
     "commit")
@@ -53,10 +53,10 @@ case "$2" in
 	    ;;
     "push")
         push
-	    ;;
-	*)
-		error
-		;;
+        ;;
+    *)
+        error
+        ;;
 esac
 
 
