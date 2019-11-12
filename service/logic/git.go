@@ -15,11 +15,12 @@ type GitHub struct {
 }
 
 type Git struct {
-	ScriptPath   string
-	Path         string
-	Name         string
-	ActiveBranch string
-	Branches     []string
+	ScriptPath     string
+	Path           string
+	Name           string
+	ActiveBranch   string
+	LocalBranches  map[string]int
+	RemoteBranches map[string]int
 }
 
 func (g *Git) ShowAll() (err error) {
@@ -29,7 +30,8 @@ func (g *Git) ShowAll() (err error) {
 		arr := strings.Split(string(out), "\n")
 		if len(arr) > 0 {
 			g.ActiveBranch = ""
-			g.Branches = make([]string, 0)
+			g.LocalBranches = make(map[string]int, 0)
+			g.RemoteBranches = make(map[string]int, 0)
 		} else {
 			return errors.New(fmt.Sprintf("ShowAll exec.Command name:%s len 0 out:%v\n", g.Name, out))
 		}
@@ -39,13 +41,21 @@ func (g *Git) ShowAll() (err error) {
 			}
 			v = strings.Replace(v, " ", "", -1)
 			if matched, err := regexp.Match(`\*`, []byte(v)); err != nil {
-				return errors.New(fmt.Sprintf("ShowAll regexp.Match name:%s err:%v\n", g.Name, err))
+				return errors.New(fmt.Sprintf("ShowAll regexp.Match active name:%s err:%v\n", g.Name, err))
 			} else {
 				if matched == true {
 					g.ActiveBranch = strings.Replace(v, "*", "", -1)
 				}
 			}
-			g.Branches = append(g.Branches, strings.Replace(v, "*", "", -1))
+			if matched, err := regexp.Match(`remotes`, []byte(v)); err != nil {
+				return errors.New(fmt.Sprintf("ShowAll regexp.Match local/remote name:%s err:%v\n", g.Name, err))
+			} else {
+				if matched == true {
+					g.RemoteBranches[strings.Replace(v, "*", "", -1)] = 1
+				} else {
+					g.LocalBranches[strings.Replace(v, "*", "", -1)] = 1
+				}
+			}
 		}
 	}
 	return nil
@@ -59,18 +69,14 @@ func (g *Git) CheckOutBranch(name string) (err error) {
 	if err = g.ShowAll(); err != nil {
 		return errors.New(fmt.Sprintf("CheckOutBranch err:(%v)\n", err))
 	}
-	exist := false
-	for _, v := range g.Branches {
-		if v == name {
-			exist = true
-			if out, err := exec.Command("sh", g.ScriptPath, g.Path, "checkout", name).Output(); err != nil {
-				return errors.New(fmt.Sprintf("CheckOutBranch exec.Command name:%s err:%v\n", g.Name, err))
-			} else {
-				log.Println("out:", string(out))
-			}
+	fullName := fmt.Sprintf("remotes/origin/%s", name)
+	if _, ok := g.RemoteBranches[fullName]; ok {
+		if out, err := exec.Command("sh", g.ScriptPath, g.Path, "checkout", name, fullName).Output(); err != nil {
+			return errors.New(fmt.Sprintf("CheckOutBranch exec.Command name:%s err:%v\n", g.Name, err))
+		} else {
+			log.Println("out:", string(out))
 		}
-	}
-	if exist == false {
+	} else {
 		return errors.New(fmt.Sprintf("CheckOutBranch exec.Command name:%s to:`%s` wasn't exist\n", g.Name, name))
 	}
 	return nil
@@ -110,27 +116,34 @@ func (s *Service) NewGitHub() *GitHub {
 	}
 	for _, v := range s.C.Projects {
 		git := &Git{
-			ScriptPath:   g.ScriptPath,
-			Path:         v[1],
-			Name:         v[0],
-			ActiveBranch: "",
-			Branches:     make([]string, 0),
+			ScriptPath:     g.ScriptPath,
+			Path:           v[1],
+			Name:           v[0],
+			ActiveBranch:   "",
+			LocalBranches:  make(map[string]int, 0),
+			RemoteBranches: make(map[string]int, 0),
 		}
 		g.Gits[git.Name] = git
 	}
 	for _, v := range g.Gits {
-		log.Println("Generator")
-		if err := v.Generator("test"); err != nil {
+		//if err := v.ShowAll(); err != nil {
+		//	log.Println(err)
+		//}
+		if err := v.CheckOutBranch("leiting_191017_2.0.0"); err != nil {
 			log.Println(err)
 		}
-		log.Println("Commit")
-		if err := v.Commit("test"); err != nil {
-			log.Println(err)
-		}
-		log.Println("Push")
-		if err := v.Push("test"); err != nil {
-			log.Println(err)
-		}
+		//log.Println("Generator")
+		//if err := v.Generator("test"); err != nil {
+		//	log.Println(err)
+		//}
+		//log.Println("Commit")
+		//if err := v.Commit("test"); err != nil {
+		//	log.Println(err)
+		//}
+		//log.Println("Push")
+		//if err := v.Push("test"); err != nil {
+		//	log.Println(err)
+		//}
 	}
 	return g
 }

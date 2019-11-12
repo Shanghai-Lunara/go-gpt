@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 
 function showAll() {
-    git branch -a
-}
-
-function createAndTrack() {
-    git checkout -B $1 --track $1
+    git branch -a | grep -v HEAD
 }
 
 function changeBranch() {
     git reset --hard
-    git checkout -B $1
-    git pull
+    git checkout -B $1 --track $2
+    exit 0
 }
 
 function generatorData() {
@@ -44,10 +40,10 @@ case "$2" in
         showAll
 		;;
 	"checkout")
-	    if [[ -z "$3" ]]; then
+	    if [[ -z "$3" ]] || [[ -z "$4" ]]; then
 	        error
 	    fi
-		changeBranch $3
+		changeBranch $3 $4
 		;;
 	"generator")
         generatorData
