@@ -40,10 +40,10 @@ case "$2" in
         showAll
         ;;
     "checkout")
-	    if [[ -z "$3" ]] || [[ -z "$4" ]]; then
-	        error
-	    fi
-	    changeBranch $3 $4
+        if [[ -z "$3" ]] || [[ -z "$4" ]]; then
+            error
+        fi
+        changeBranch $3 $4
 		;;
     "generator")
         generatorData
