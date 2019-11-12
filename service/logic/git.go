@@ -63,7 +63,7 @@ func (g *Git) CheckOutBranch(name string) (err error) {
 	for _, v := range g.Branches {
 		if v == name {
 			exist = true
-			if out, err := exec.Command("sh", g.ScriptPath, g.Path, "change", name).Output(); err != nil {
+			if out, err := exec.Command("sh", g.ScriptPath, g.Path, "checkout", name).Output(); err != nil {
 				return errors.New(fmt.Sprintf("CheckOutBranch exec.Command name:%s err:%v\n", g.Name, err))
 			} else {
 				log.Println("out:", string(out))
@@ -77,8 +77,28 @@ func (g *Git) CheckOutBranch(name string) (err error) {
 }
 
 func (g *Git) Generator(name string) (err error) {
-	if err = g.CheckOutBranch(name); err != nil {
-		return errors.New(fmt.Sprintf("Generator CheckOutBranch exec.Command name:%s to:`%s` wasn't exist\n", g.Name, name))
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "generator", name).Output(); err != nil {
+		return errors.New(fmt.Sprintf("Generator exec.Command name:%s err:%v\n", g.Name, err))
+	} else {
+		log.Println("out:", string(out))
+	}
+	return nil
+}
+
+func (g *Git) Commit(name string) (err error) {
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "commit", name).Output(); err != nil {
+		return errors.New(fmt.Sprintf("Commit exec.Command name:%s err:%v\n", g.Name, err))
+	} else {
+		log.Println("out:", string(out))
+	}
+	return nil
+}
+
+func (g *Git) Push(name string) (err error) {
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "push", name).Output(); err != nil {
+		return errors.New(fmt.Sprintf("Push exec.Command name:%s err:%v\n", g.Name, err))
+	} else {
+		log.Println("out:", string(out))
 	}
 	return nil
 }
@@ -99,7 +119,16 @@ func (s *Service) NewGitHub() *GitHub {
 		g.Gits[git.Name] = git
 	}
 	for _, v := range g.Gits {
-		if err := v.CheckOutBranch("develop"); err != nil {
+		log.Println("Generator")
+		if err := v.Generator("test"); err != nil {
+			log.Println(err)
+		}
+		log.Println("Commit")
+		if err := v.Commit("test"); err != nil {
+			log.Println(err)
+		}
+		log.Println("Push")
+		if err := v.Push("test"); err != nil {
 			log.Println(err)
 		}
 	}
