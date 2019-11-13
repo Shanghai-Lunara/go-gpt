@@ -21,6 +21,7 @@ type Config struct {
 	Http           HttpConfig `yaml:"HttpService"`
 	LogFile        string     `yaml:"LogFile"`
 	ScriptsPath    string     `yaml:"ScriptsPath"`
+	TemplatesPath  string     `yaml:"TemplatesPath"`
 	ProjectsConfig `yaml:",inline"`
 	ConfigPath     string
 }
@@ -45,7 +46,6 @@ func Init() (err error) {
 		return errors.New(fmt.Sprintf("yaml.Unmarshal err:%v", err))
 	}
 	conf.ConfigPath = configPath
-	//log.Println("a:", conf)
 	return nil
 }
 

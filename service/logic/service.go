@@ -1,8 +1,8 @@
 package logic
 
 import (
+	"context"
 	"go-gpt/conf"
-	"golang.org/x/net/context"
 )
 
 type Service struct {
@@ -14,11 +14,14 @@ type Service struct {
 }
 
 func NewService(c *conf.Config) *Service {
+	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		C:           c,
-		HttpService: InitHttpServer(c),
+		C:      c,
+		ctx:    ctx,
+		cancel: cancel,
 	}
 	s.GitHub = s.NewGitHub()
+	s.HttpService = s.InitHttpServer()
 	return s
 }
 

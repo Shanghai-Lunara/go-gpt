@@ -1,2 +1,2 @@
 # go-gpt
-a GUI publish tool for project
+a gui publish tool for project

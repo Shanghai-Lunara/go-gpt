@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"go-gpt/conf"
 	"log"
 	"net/http"
 	"time"
@@ -14,13 +13,17 @@ type HttpService struct {
 	server *http.Server
 }
 
-func InitHttpServer(c *conf.Config) *HttpService {
+func (s *Service) InitHttpServer() *HttpService {
 	router := gin.Default()
+	router.LoadHTMLGlob(fmt.Sprintf("%s/*", s.C.TemplatesPath))
 	router.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "Welcome Gin Server")
 	})
+	router.GET("/all", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "all.tmpl", map[string]string{"title": "world"})
+	})
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", c.Http.IP, c.Http.Port),
+		Addr:    fmt.Sprintf("%s:%d", s.C.Http.IP, s.C.Http.Port),
 		Handler: router,
 	}
 	go func() {

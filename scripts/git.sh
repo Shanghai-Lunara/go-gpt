@@ -18,7 +18,7 @@ function generatorData() {
 
 function commit() {
     git status
-    git commit -a -m "gen plist data"
+    git commit -a -m "gen plist data by go-gpt"
 }
 
 function push() {

@@ -6,6 +6,7 @@ HttpService:
   port: 8080
 
 ScriptsPath: "/Users/nevermore/go/src/go-gpt/scripts/"
+TemplatesPath: "/Users/nevermore/go/src/go-gpt/templates/"
 
 LogFile: "gpt.log"
 

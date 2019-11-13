@@ -126,25 +126,5 @@ func (s *Service) NewGitHub() *GitHub {
 		}
 		g.Gits[git.Name] = git
 	}
-	for _, v := range g.Gits {
-		//if err := v.ShowAll(); err != nil {
-		//	log.Println(err)
-		//}
-		if err := v.CheckOutBranch("leiting_191017_2.0.0"); err != nil {
-			log.Println(err)
-		}
-		//log.Println("Generator")
-		//if err := v.Generator("leiting_191017_2.0.0"); err != nil {
-		//	log.Println(err)
-		//}
-		//log.Println("Commit")
-		//if err := v.Commit("leiting_191017_2.0.0"); err != nil {
-		//	log.Println(err)
-		//}
-		//log.Println("Push")
-		//if err := v.Push("leiting_191017_2.0.0"); err != nil {
-		//	log.Println(err)
-		//}
-	}
 	return g
 }
