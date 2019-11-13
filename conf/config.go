@@ -8,13 +8,19 @@ import (
 	"io/ioutil"
 )
 
+type HttpConfig struct {
+	IP   string `yaml:"ip"`
+	Port int    `yaml:"port"`
+}
+
 type ProjectsConfig struct {
 	Projects [][]string `yaml:"Projects,flow"`
 }
 
 type Config struct {
-	LogFile        string `yaml:"LogFile"`
-	ScriptsPath    string `yaml:"ScriptsPath"`
+	Http           HttpConfig `yaml:"HttpService"`
+	LogFile        string     `yaml:"LogFile"`
+	ScriptsPath    string     `yaml:"ScriptsPath"`
 	ProjectsConfig `yaml:",inline"`
 	ConfigPath     string
 }

@@ -44,13 +44,13 @@ case "$2" in
             error
         fi
         changeBranch $3 $4
-		;;
+        ;;
     "generator")
         generatorData
-	    ;;
+        ;;
     "commit")
         commit
-	    ;;
+        ;;
     "push")
         push
         ;;

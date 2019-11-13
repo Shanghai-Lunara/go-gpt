@@ -40,20 +40,21 @@ func (g *Git) ShowAll() (err error) {
 				continue
 			}
 			v = strings.Replace(v, " ", "", -1)
+			s := strings.Replace(v, "*", "", -1)
 			if matched, err := regexp.Match(`\*`, []byte(v)); err != nil {
 				return errors.New(fmt.Sprintf("ShowAll regexp.Match active name:%s err:%v\n", g.Name, err))
 			} else {
 				if matched == true {
-					g.ActiveBranch = strings.Replace(v, "*", "", -1)
+					g.ActiveBranch = s
 				}
 			}
 			if matched, err := regexp.Match(`remotes`, []byte(v)); err != nil {
 				return errors.New(fmt.Sprintf("ShowAll regexp.Match local/remote name:%s err:%v\n", g.Name, err))
 			} else {
 				if matched == true {
-					g.RemoteBranches[strings.Replace(v, "*", "", -1)] = 1
+					g.RemoteBranches[s] = 1
 				} else {
-					g.LocalBranches[strings.Replace(v, "*", "", -1)] = 1
+					g.LocalBranches[s] = 1
 				}
 			}
 		}
@@ -133,15 +134,15 @@ func (s *Service) NewGitHub() *GitHub {
 			log.Println(err)
 		}
 		//log.Println("Generator")
-		//if err := v.Generator("test"); err != nil {
+		//if err := v.Generator("leiting_191017_2.0.0"); err != nil {
 		//	log.Println(err)
 		//}
 		//log.Println("Commit")
-		//if err := v.Commit("test"); err != nil {
+		//if err := v.Commit("leiting_191017_2.0.0"); err != nil {
 		//	log.Println(err)
 		//}
 		//log.Println("Push")
-		//if err := v.Push("test"); err != nil {
+		//if err := v.Push("leiting_191017_2.0.0"); err != nil {
 		//	log.Println(err)
 		//}
 	}
