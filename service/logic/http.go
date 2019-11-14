@@ -20,7 +20,11 @@ func (s *Service) InitHttpServer() *HttpService {
 		c.String(http.StatusOK, "Welcome Gin Server")
 	})
 	router.GET("/all", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "all.html", map[string]string{"title": "world"})
+		all, err := s.GitHub.handleAll()
+		if err != nil {
+			log.Println("handleAll err:", err)
+		}
+		c.HTML(http.StatusOK, "all.html", map[string]string{"all": all})
 	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.C.Http.IP, s.C.Http.Port),

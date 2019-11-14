@@ -12,4 +12,4 @@ LogFile: "gpt.log"
 
 Projects:
   - ["hero", "/Users/nevermore/Documents/saga/hero", "/svn"]
-#  - ["p2", "/Users/nevermore/go/src/go-notification", "/svn"]
+  - ["emblem", "/Users/nevermore/Documents/saga/emblem", "/svn"]

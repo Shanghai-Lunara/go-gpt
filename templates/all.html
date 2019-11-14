@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Go-gpt</title>
+    <title>go-gpt</title>
 </head>
 <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
@@ -10,9 +10,49 @@
 <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
 <script>
     $(document).ready(function(){
-        {{/*document.write("{{ .title }}")*/}}
+        let a = jQuery.parseJSON('{{ .all }}');
+        console.log("a:", a);
+        $(a).each(function (m,n) {
+            let t = $("#nav-item-tmp").clone();
+            $(t).attr("id", n.name).attr("class", "nav-item");
+            $(t).find("a").text(n.name);
+            if (m > 0) {
+                $(t).find("a").attr("class", "nav-link group-nav");
+            }
+            $(t).appendTo("#navs");
+
+            // init contents
+            t = $("#content-tmp").clone();
+            $(t).attr("id", n.name+"-content");
+            if (m === 0) {
+                $(t).attr("class", "group-content");
+            }
+            $(t).appendTo(".container");
+            $(t).find(".ul-branch").attr("id", n['name']+"-branch");
+            $(n['list_branches']).each(function (m1,n1) {
+                let ul = $("#branch-li-tmp").clone().html(n1).attr("id", n1).attr("value", n1);
+                if (n1 === n['active_branch']) {
+                    $(ul).attr("class", "list-group-item active")
+                } else {
+                    $(ul).attr("class", "list-group-item")
+                }
+                $(ul).appendTo("#"+n['name']+"-branch")
+            });
+        });
+        $(".group-nav").bind("click", function () {
+            let prefix = $(this).html();
+            $(".group-nav").attr("class", "nav-link group-nav");
+            $("#"+prefix).find("a").attr("class", "nav-link group-nav active");
+            $(".group-content").attr("class", "group-content hidden");
+            $("#"+prefix+"-content").attr("class", "group-content")
+        })
     });
 </script>
+<style type="text/css">
+    .hidden{
+        display: none;
+    }
+</style>
 <body>
 <div class="jumbotron">
     <h1>go-gpt</h1>
@@ -22,34 +62,23 @@
 {{/*    <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a></p>*/}}
 </div>
 <div class="container">
-    <ul class="nav nav-tabs">
-        <li class="nav-item">
-            <a class="nav-link active" href="#">hero</a>
+    <ul class="nav nav-tabs" id="navs">
+        <li class="nav-item hidden" id="nav-item-tmp">
+            <a class="nav-link group-nav active" href="#">nav-item-tmp</a>
         </li>
-        <li class="nav-item">
-            <a class="nav-link" href="#">emblem</a>
-        </li>
-{{/*        <li class="nav-item">*/}}
-{{/*            <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">Disabled</a>*/}}
-{{/*        </li>*/}}
     </ul>
     <p></p>
-    <div>
+    <div id="content-tmp" class="group-content hidden">
         <p></p>
-        <ul class="list-group col-md-6">
-            <li class="list-group-item disabled" aria-disabled="true">develop</li>
-            <li class="list-group-item active">jp_2.0.0</li>
-            <li class="list-group-item">leiting_190322</li>
+        <ul class="list-group col-md-6 ul-branch" id="branch-tmp">
+            <li class="list-group-item active hidden" id="branch-li-tmp">branch1</li>
         </ul>
         <p></p>
-        <ul class="list-group col-md-6">
-            <li class="list-group-item disabled" aria-disabled="true">Command1</li>
-            <li class="list-group-item">Command2</li>
-            <li class="list-group-item">Command3</li>
-            <li class="list-group-item">Command4</li>
+        <ul class="list-group col-md-6 ul-command" id="cmd-tmp">
+            <li class="list-group-item" aria-disabled="true">Command1</li>
+            <li class="list-group-item active">Command2</li>
         </ul>
     </div>
-
 
 </div>
 </body>

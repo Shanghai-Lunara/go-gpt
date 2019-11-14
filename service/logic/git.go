@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -15,12 +16,13 @@ type GitHub struct {
 }
 
 type Git struct {
-	ScriptPath     string
-	Path           string
-	Name           string
-	ActiveBranch   string
-	LocalBranches  map[string]int
-	RemoteBranches map[string]int
+	ScriptPath     string         `json:"script_path"`
+	Path           string         `json:"path"`
+	Name           string         `json:"name"`
+	ActiveBranch   string         `json:"active_branch"`
+	LocalBranches  map[string]int `json:"local_branches"`
+	RemoteBranches map[string]int `json:"remote_branches"`
+	ListBranches   []string       `json:"list_branches"`
 }
 
 func (g *Git) ShowAll() (err error) {
@@ -32,6 +34,7 @@ func (g *Git) ShowAll() (err error) {
 			g.ActiveBranch = ""
 			g.LocalBranches = make(map[string]int, 0)
 			g.RemoteBranches = make(map[string]int, 0)
+			g.ListBranches = make([]string, 0)
 		} else {
 			return errors.New(fmt.Sprintf("ShowAll exec.Command name:%s len 0 out:%v\n", g.Name, out))
 		}
@@ -53,6 +56,7 @@ func (g *Git) ShowAll() (err error) {
 			} else {
 				if matched == true {
 					g.RemoteBranches[s] = 1
+					g.ListBranches = append(g.ListBranches, s)
 				} else {
 					g.LocalBranches[s] = 1
 				}
@@ -123,8 +127,28 @@ func (s *Service) NewGitHub() *GitHub {
 			ActiveBranch:   "",
 			LocalBranches:  make(map[string]int, 0),
 			RemoteBranches: make(map[string]int, 0),
+			ListBranches:   make([]string, 0),
 		}
 		g.Gits[git.Name] = git
 	}
 	return g
+}
+
+func (g *GitHub) handleAll() (res string, err error) {
+	t := make([]Git, 0)
+	for _, v := range g.Gits {
+		if err = v.ShowAll(); err != nil {
+			return "", nil
+		}
+		tmp := *v
+		tmp.ActiveBranch = fmt.Sprintf("remotes/origin/%s", tmp.ActiveBranch)
+		tmp.LocalBranches = make(map[string]int, 0)
+		tmp.RemoteBranches = make(map[string]int, 0)
+		t = append(t, tmp)
+	}
+	if ret, err := json.Marshal(t); err != nil {
+		return "", err
+	} else {
+		return string(ret), nil
+	}
 }
