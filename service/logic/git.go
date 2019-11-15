@@ -8,14 +8,18 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 type GitHub struct {
+	mu         sync.RWMutex
 	ScriptPath string
 	Gits       map[string]*Git
 }
 
 type Git struct {
+	mu             sync.RWMutex
 	ScriptPath     string         `json:"script_path"`
 	Path           string         `json:"path"`
 	Name           string         `json:"name"`
@@ -23,9 +27,12 @@ type Git struct {
 	LocalBranches  map[string]int `json:"local_branches"`
 	RemoteBranches map[string]int `json:"remote_branches"`
 	ListBranches   []string       `json:"list_branches"`
+	TaskCount      int32          `json:"task_count"`
 }
 
 func (g *Git) ShowAll() (err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "all").Output(); err != nil {
 		return errors.New(fmt.Sprintf("ShowAll exec.Command name:%s err:%v\n", g.Name, err))
 	} else {
@@ -114,6 +121,26 @@ func (g *Git) Push(name string) (err error) {
 	return nil
 }
 
+func (g *Git) ChangeTaskCount(incr int32) {
+	atomic.AddInt32(&g.TaskCount, incr)
+}
+
+func (g *Git) Common(name string) (err error) {
+	if err = g.CheckOutBranch(name); err != nil {
+		return err
+	}
+	if err = g.Generator(name); err != nil {
+		return err
+	}
+	if err = g.Commit(name); err != nil {
+		return err
+	}
+	if err = g.Push(name); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (s *Service) NewGitHub() *GitHub {
 	g := &GitHub{
 		ScriptPath: fmt.Sprintf("%s%s", s.C.ScriptsPath, "git.sh"),
@@ -128,15 +155,18 @@ func (s *Service) NewGitHub() *GitHub {
 			LocalBranches:  make(map[string]int, 0),
 			RemoteBranches: make(map[string]int, 0),
 			ListBranches:   make([]string, 0),
+			TaskCount:      0,
 		}
 		g.Gits[git.Name] = git
 	}
 	return g
 }
 
-func (g *GitHub) handleAll() (res string, err error) {
+func (gh *GitHub) handleAll() (res string, err error) {
+	gh.mu.Lock()
+	defer gh.mu.Unlock()
 	t := make([]Git, 0)
-	for _, v := range g.Gits {
+	for _, v := range gh.Gits {
 		if err = v.ShowAll(); err != nil {
 			return "", nil
 		}
@@ -151,4 +181,19 @@ func (g *GitHub) handleAll() (res string, err error) {
 	} else {
 		return string(ret), nil
 	}
+}
+
+func (gh *GitHub) handleCommand(gitName, branchName, command string) (err error) {
+	if t, ok := gh.Gits[gitName]; ok {
+		t.mu.Lock()
+		defer t.mu.Unlock()
+		t.ChangeTaskCount(1)
+		defer t.ChangeTaskCount(-1)
+		if err = t.Common(branchName); err != nil {
+			return err
+		}
+	} else {
+		log.Printf("no branch name:%s branch:%s command:%s\n", gitName, branchName, command)
+	}
+	return nil
 }

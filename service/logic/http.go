@@ -23,8 +23,12 @@ func (s *Service) InitHttpServer() *HttpService {
 		all, err := s.GitHub.handleAll()
 		if err != nil {
 			log.Println("handleAll err:", err)
+			all = "{}"
 		}
 		c.HTML(http.StatusOK, "all.html", map[string]string{"all": all})
+	})
+	router.GET("/gen", func(c *gin.Context) {
+		c.String(http.StatusOK, "10000")
 	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.C.Http.IP, s.C.Http.Port),
