@@ -24,11 +24,16 @@ function commit() {
 function push() {
     git pull
     git push --all
+}
+
+function update() {
+    ./deploy_dev.sh
     exit 0
 }
 
+
 function error() {
-    echo "Usage: git.sh {git-path} {all|checkout|generator|commit|push} {name}"
+    echo "Usage: git.sh {git-path} {all|checkout|generator|commit|push|update} {name}"
     exit
 }
 
@@ -54,6 +59,9 @@ case "$2" in
         ;;
     "push")
         push
+        ;;
+    "update")
+        update
         ;;
     *)
         error

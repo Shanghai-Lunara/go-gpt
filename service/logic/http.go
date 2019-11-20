@@ -17,9 +17,6 @@ func (s *Service) InitHttpServer() *HttpService {
 	router := gin.Default()
 	router.LoadHTMLGlob(fmt.Sprintf("%s/*", s.C.TemplatesPath))
 	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Welcome Gin Server")
-	})
-	router.GET("/all", func(c *gin.Context) {
 		all, err := s.GitHub.handleAll()
 		if err != nil {
 			log.Println("handleAll err:", err)

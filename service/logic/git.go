@@ -125,6 +125,15 @@ func (g *Git) Push(name string) (err error) {
 	return nil
 }
 
+func (g *Git) Update(name string) (err error) {
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "update", name).Output(); err != nil {
+		return errors.New(fmt.Sprintf("Update exec.Command name:%s err:%v\n", g.Name, err))
+	} else {
+		log.Println("out:", string(out))
+	}
+	return nil
+}
+
 func (g *Git) ChangeTaskCount(incr int32) {
 	atomic.AddInt32(&g.TaskCount, incr)
 }
@@ -157,6 +166,9 @@ func (g *Git) LoopChan() {
 		case c := <-g.TaskChan:
 			if err := g.Common(c.branchName); err != nil {
 				log.Printf("LoopChan Common err:(%v)\n", err)
+			}
+			if err := g.Update(c.branchName); err != nil {
+				log.Printf("LoopChan Update err:(%v)\n", err)
 			}
 			g.ChangeTaskCount(-1)
 		}
