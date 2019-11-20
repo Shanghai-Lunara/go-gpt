@@ -49,19 +49,18 @@
             $(".group-content").attr("class", "group-content hidden");
             $("#"+prefix+"-content").attr("class", "group-content")
         });
-        function Send() {
+        function Send(name, branch, command) {
             let xHttp = new XMLHttpRequest();
             xHttp.onreadystatechange = function() {
                 if (this.readyState == 4 && this.status == 200) {
-                    console.log(11111)
+                    console.log("get success")
                 } else {
-                    console.log(22222)
+                    console.log("get failed")
                 }
             };
-            xHttp.open("GET", "/gen?name=111", true);
+            xHttp.open("GET", "/gen/"+name+"/"+branch+"/"+command, true);
             xHttp.send();
         }
-        Send()
     });
 </script>
 <style type="text/css">

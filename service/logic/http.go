@@ -27,8 +27,19 @@ func (s *Service) InitHttpServer() *HttpService {
 		}
 		c.HTML(http.StatusOK, "all.html", map[string]string{"all": all})
 	})
-	router.GET("/gen", func(c *gin.Context) {
-		c.String(http.StatusOK, "10000")
+	router.GET("/gen/:name/:branch/:command", func(c *gin.Context) {
+		log.Println("params:", c.Params)
+		command := &Command{
+			projectName: c.Param("name"),
+			branchName:  c.Param("branch"),
+			command:     c.Param("command"),
+		}
+		go func() {
+			if err := s.GitHub.handleCommand(command); err != nil {
+				log.Println("s.GitHub.handleCommand err:", err)
+			}
+		}()
+		c.String(http.StatusOK, "success")
 	})
 	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", s.C.Http.IP, s.C.Http.Port),

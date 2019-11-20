@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"time"
 )
 
 type GitHub struct {
@@ -28,11 +30,15 @@ type Git struct {
 	RemoteBranches map[string]int `json:"remote_branches"`
 	ListBranches   []string       `json:"list_branches"`
 	TaskCount      int32          `json:"task_count"`
+	TaskChan       chan *Command
+	ctx            context.Context
 }
 
-func (g *Git) ShowAll() (err error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+func (g *Git) ShowAll(lock bool) (err error) {
+	if lock == true {
+		g.mu.Lock()
+		defer g.mu.Unlock()
+	}
 	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "all").Output(); err != nil {
 		return errors.New(fmt.Sprintf("ShowAll exec.Command name:%s err:%v\n", g.Name, err))
 	} else {
@@ -78,9 +84,6 @@ func (g *Git) ShowActive() {
 }
 
 func (g *Git) CheckOutBranch(name string) (err error) {
-	if err = g.ShowAll(); err != nil {
-		return errors.New(fmt.Sprintf("CheckOutBranch err:(%v)\n", err))
-	}
 	fullName := fmt.Sprintf("remotes/origin/%s", name)
 	if _, ok := g.RemoteBranches[fullName]; ok {
 		if out, err := exec.Command("sh", g.ScriptPath, g.Path, "checkout", name, fullName).Output(); err != nil {
@@ -126,6 +129,9 @@ func (g *Git) ChangeTaskCount(incr int32) {
 }
 
 func (g *Git) Common(name string) (err error) {
+	if err = g.ShowAll(true); err != nil {
+		return err
+	}
 	if err = g.CheckOutBranch(name); err != nil {
 		return err
 	}
@@ -139,6 +145,21 @@ func (g *Git) Common(name string) (err error) {
 		return err
 	}
 	return nil
+}
+
+func (g *Git) LoopChan() {
+	defer close(g.TaskChan)
+	for {
+		select {
+		case <-g.ctx.Done():
+			return
+		case c := <-g.TaskChan:
+			if err := g.Common(c.branchName); err != nil {
+				log.Printf("LoopChan Common err:(%v)\n", err)
+			}
+			g.ChangeTaskCount(-1)
+		}
+	}
 }
 
 func (s *Service) NewGitHub() *GitHub {
@@ -156,24 +177,27 @@ func (s *Service) NewGitHub() *GitHub {
 			RemoteBranches: make(map[string]int, 0),
 			ListBranches:   make([]string, 0),
 			TaskCount:      0,
+			TaskChan:       make(chan *Command, 1024),
+			ctx:            s.ctx,
 		}
 		g.Gits[git.Name] = git
+		go git.LoopChan()
 	}
 	return g
 }
 
 func (gh *GitHub) handleAll() (res string, err error) {
-	gh.mu.Lock()
-	defer gh.mu.Unlock()
-	t := make([]Git, 0)
+	t := make([]GitResponse, 0)
 	for _, v := range gh.Gits {
-		if err = v.ShowAll(); err != nil {
+		if err = v.ShowAll(true); err != nil {
 			return "", nil
 		}
-		tmp := *v
-		tmp.ActiveBranch = fmt.Sprintf("remotes/origin/%s", tmp.ActiveBranch)
-		tmp.LocalBranches = make(map[string]int, 0)
-		tmp.RemoteBranches = make(map[string]int, 0)
+		tmp := GitResponse{
+			Name:         v.Name,
+			ActiveBranch: fmt.Sprintf("remotes/origin/%s", v.ActiveBranch),
+			ListBranches: v.ListBranches,
+			TaskCount:    v.TaskCount,
+		}
 		t = append(t, tmp)
 	}
 	if ret, err := json.Marshal(t); err != nil {
@@ -183,17 +207,21 @@ func (gh *GitHub) handleAll() (res string, err error) {
 	}
 }
 
-func (gh *GitHub) handleCommand(gitName, branchName, command string) (err error) {
-	if t, ok := gh.Gits[gitName]; ok {
-		t.mu.Lock()
-		defer t.mu.Unlock()
+func (gh *GitHub) handleCommand(c *Command) (err error) {
+	if t, ok := gh.Gits[c.projectName]; ok {
 		t.ChangeTaskCount(1)
-		defer t.ChangeTaskCount(-1)
-		if err = t.Common(branchName); err != nil {
-			return err
+		tick := time.NewTicker(time.Second * 1)
+		defer tick.Stop()
+		for {
+			select {
+			case <-tick.C:
+				return
+			case t.TaskChan <- c:
+				return
+			}
 		}
 	} else {
-		log.Printf("no branch name:%s branch:%s command:%s\n", gitName, branchName, command)
+		log.Printf("no project:%v\n", c)
 	}
 	return nil
 }
