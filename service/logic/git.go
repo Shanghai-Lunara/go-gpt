@@ -69,6 +69,7 @@ func (g *Git) ShowAll(lock bool) (err error) {
 			} else {
 				if matched == true {
 					g.RemoteBranches[s] = 1
+					s = strings.Replace(s, "remotes/origin/", "", -1)
 					g.ListBranches = append(g.ListBranches, s)
 				} else {
 					g.LocalBranches[s] = 1
@@ -194,7 +195,7 @@ func (gh *GitHub) handleAll() (res string, err error) {
 		}
 		tmp := GitResponse{
 			Name:         v.Name,
-			ActiveBranch: fmt.Sprintf("remotes/origin/%s", v.ActiveBranch),
+			ActiveBranch: v.ActiveBranch,
 			ListBranches: v.ListBranches,
 			TaskCount:    v.TaskCount,
 		}

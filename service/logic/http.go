@@ -34,11 +34,9 @@ func (s *Service) InitHttpServer() *HttpService {
 			branchName:  c.Param("branch"),
 			command:     c.Param("command"),
 		}
-		go func() {
-			if err := s.GitHub.handleCommand(command); err != nil {
-				log.Println("s.GitHub.handleCommand err:", err)
-			}
-		}()
+		if err := s.GitHub.handleCommand(command); err != nil {
+			log.Println("s.GitHub.handleCommand err:", err)
+		}
 		c.String(http.StatusOK, "success")
 	})
 	server := &http.Server{
