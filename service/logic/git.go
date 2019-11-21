@@ -165,10 +165,10 @@ func (g *Git) LoopChan() {
 			return
 		case c := <-g.TaskChan:
 			if err := g.Common(c.branchName); err != nil {
-				log.Printf("LoopChan Common err:(%v)\n", err)
+				log.Printf("LoopChan Common err:%v\n", err)
 			}
 			if err := g.Update(c.branchName); err != nil {
-				log.Printf("LoopChan Update err:(%v)\n", err)
+				log.Printf("LoopChan Update err:%v\n", err)
 			}
 			g.ChangeTaskCount(-1)
 		}
@@ -228,6 +228,8 @@ func (gh *GitHub) handleCommand(c *Command) (err error) {
 		for {
 			select {
 			case <-tick.C:
+				t.ChangeTaskCount(-1)
+				log.Println("write chan timeout cmd:", c)
 				return
 			case t.TaskChan <- c:
 				return

@@ -8,7 +8,7 @@ HttpService:
 ScriptsPath: "/Users/nevermore/go/src/go-gpt/scripts/"
 TemplatesPath: "/Users/nevermore/go/src/go-gpt/templates/"
 
-LogFile: "gpt.log"
+LogFile: "/Users/nevermore/go/src/go-gpt/log/gpt.log"
 
 Projects:
   - ["hero", "/Users/nevermore/Documents/saga/hero", "/svn"]
