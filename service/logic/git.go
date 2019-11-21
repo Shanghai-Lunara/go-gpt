@@ -31,6 +31,7 @@ type Git struct {
 	ListBranches   []string       `json:"list_branches"`
 	TaskCount      int32          `json:"task_count"`
 	TaskChan       chan *Command
+	CurrentTask    *Command
 	ctx            context.Context
 }
 
@@ -164,6 +165,7 @@ func (g *Git) LoopChan() {
 		case <-g.ctx.Done():
 			return
 		case c := <-g.TaskChan:
+			g.CurrentTask = c
 			if err := g.Common(c.branchName); err != nil {
 				log.Printf("LoopChan Common err:%v\n", err)
 			}
@@ -171,7 +173,16 @@ func (g *Git) LoopChan() {
 				log.Printf("LoopChan Update err:%v\n", err)
 			}
 			g.ChangeTaskCount(-1)
+			g.CurrentTask = nil
 		}
+	}
+}
+
+func (g *Git) GetCurrentTask() string {
+	if g.CurrentTask == nil {
+		return "N/A"
+	} else {
+		return fmt.Sprintf("%s-%s-%s", g.CurrentTask.projectName, g.CurrentTask.branchName, g.CurrentTask.command)
 	}
 }
 
@@ -210,7 +221,9 @@ func (gh *GitHub) handleAll() (res string, err error) {
 			ActiveBranch: v.ActiveBranch,
 			ListBranches: v.ListBranches,
 			TaskCount:    v.TaskCount,
+			CurrentTask:  v.GetCurrentTask(),
 		}
+		log.Println("CurrentTask:", tmp.CurrentTask)
 		t = append(t, tmp)
 	}
 	if ret, err := json.Marshal(t); err != nil {

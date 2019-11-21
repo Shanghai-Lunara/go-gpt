@@ -32,8 +32,9 @@
             }
             $(t).appendTo(".container");
             if (n['task_count'] !== "") {
-                $(t).find("a").html(n['task_count'])
+                $(t).find(".task-count").html(n['task_count']);
             }
+            $(t).find(".current-task").html(n['current_task']);
             $(t).find(".ul-branch").attr("id", n['name']+"-branch");
             $(n['list_branches']).each(function (m1,n1) {
                 let ul = $("#branch-li-tmp").clone().html(n1).attr("id", n1);
@@ -101,9 +102,8 @@
     <p></p>
     <div id="content-tmp" class="group-content hidden">
         <p></p>
-        <div class="alert alert-primary" role="alert">
-            Current Task Count: <a href="#" class="alert-link">0</a>
-        </div>
+        <div class="alert alert-primary col-md-8" role="alert">Task Count: <a href="#" class="alert-link task-count">0</a></div>
+        <div class="alert alert-primary col-md-8" role="alert">Current Task: <a  class="alert-link current-task">N/A</a></div>
         <ul class="list-group col-md-8 ul-branch" id="branch-tmp">
             <li class="list-group-item hidden" id="branch-li-tmp">branch1</li>
         </ul>
