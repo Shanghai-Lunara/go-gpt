@@ -46,7 +46,7 @@ func (s *Service) InitHttpServer() *HttpService {
 			if err == http.ErrServerClosed {
 				log.Println("Server closed under request")
 			} else {
-				log.Fatal("Server closed unexpect")
+				log.Fatal("Server closed unexpect err:", err)
 			}
 		}
 	}()

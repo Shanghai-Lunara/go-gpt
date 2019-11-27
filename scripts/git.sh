@@ -11,6 +11,7 @@ function changeBranch() {
 }
 
 function generatorData() {
+    git pull
     cd tools/gen_const_sheet
     ./gen_const_sheet.sh
     cd -

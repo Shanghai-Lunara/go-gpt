@@ -11,5 +11,5 @@ TemplatesPath: "/Users/nevermore/go/src/go-gpt/templates/"
 LogFile: "/Users/nevermore/go/src/go-gpt/log/gpt.log"
 
 Projects:
-  - ["hero", "/Users/nevermore/Documents/saga/hero", "/svn"]
+  - ["hero", "/Users/nevermore/Documents/saga/hero2", "/svn"]
   - ["emblem", "/Users/nevermore/Documents/saga/emblem", "/svn"]
