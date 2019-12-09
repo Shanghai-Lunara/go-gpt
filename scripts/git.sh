@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 function showAll() {
+    git fetch --all
     git branch -a | grep -v HEAD
 }
 
