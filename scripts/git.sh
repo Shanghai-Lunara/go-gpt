@@ -2,6 +2,7 @@
 
 function fetch() {
     git fetch --all
+    git fetch -p
 }
 
 function showAll() {
