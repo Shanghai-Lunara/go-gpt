@@ -35,6 +35,15 @@ type Git struct {
 	ctx            context.Context
 }
 
+func (g *Git) FetchAll() (err error) {
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "fetch").Output(); err != nil {
+		return errors.New(fmt.Sprintf("FetchAll exec.Command name:%s err:%v\n", g.Name, err))
+	} else {
+		log.Println("out:", string(out))
+	}
+	return nil
+}
+
 func (g *Git) ShowAll(lock bool) (err error) {
 	if lock == true {
 		g.mu.Lock()
@@ -160,6 +169,8 @@ func (g *Git) Common(name string) (err error) {
 
 func (g *Git) LoopChan() {
 	defer close(g.TaskChan)
+	tick := time.NewTicker(time.Second * 30)
+	defer tick.Stop()
 	for {
 		select {
 		case <-g.ctx.Done():
@@ -174,6 +185,12 @@ func (g *Git) LoopChan() {
 			}
 			g.ChangeTaskCount(-1)
 			g.CurrentTask = nil
+		case <-tick.C:
+			go func() {
+				if err := g.FetchAll(); err != nil {
+					log.Println("LoopChan FetchAll err:", err)
+				}
+			}()
 		}
 	}
 }

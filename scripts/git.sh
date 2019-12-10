@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 
-function showAll() {
+function fetch() {
     git fetch --all
+}
+
+function showAll() {
     git branch -a | grep -v HEAD
 }
 
@@ -35,7 +38,7 @@ function update() {
 
 
 function error() {
-    echo "Usage: git.sh {git-path} {all|checkout|generator|commit|push|update} {name}"
+    echo "Usage: git.sh {git-path} {fetch|all|checkout|generator|commit|push|update} {name}"
     exit
 }
 
@@ -44,6 +47,9 @@ if [[ -z "$1" ]] || [[ -z "$2" ]]; then
 fi
 cd "$1"
 case "$2" in
+    "fetch")
+        fetch
+        ;;
     "all")
         showAll
         ;;
