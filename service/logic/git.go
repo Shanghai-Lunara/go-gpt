@@ -36,6 +36,8 @@ type Git struct {
 }
 
 func (g *Git) FetchAll() (err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "fetch").Output(); err != nil {
 		return errors.New(fmt.Sprintf("FetchAll exec.Command name:%s err:%v\n", g.Name, err))
 	} else {
