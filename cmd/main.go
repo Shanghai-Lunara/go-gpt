@@ -2,8 +2,8 @@ package main
 
 import (
 	"flag"
-	"go-gpt/conf"
-	"go-gpt/service/logic"
+	"github.com/nevercase/go-gpt/conf"
+	"github.com/nevercase/go-gpt/service/logic"
 	"log"
 	"os"
 	"os/signal"

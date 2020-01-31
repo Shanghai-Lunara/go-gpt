@@ -2,7 +2,7 @@ package logic
 
 import (
 	"context"
-	"go-gpt/conf"
+	"github.com/nevercase/go-gpt/conf"
 	"log"
 	"os"
 )
