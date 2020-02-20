@@ -20,7 +20,9 @@ function generatorData() {
     cd tools/gen_const_sheet
     ./gen_const_sheet.sh
     cd -
+    git add --all
 }
+
 
 function commit() {
     git status

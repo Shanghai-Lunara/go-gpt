@@ -2,13 +2,14 @@ package main
 
 import (
 	"flag"
-	"github.com/nevercase/go-gpt/conf"
-	"github.com/nevercase/go-gpt/service/logic"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/nevercase/go-gpt/conf"
+	"github.com/nevercase/go-gpt/service/logic"
 )
 
 func main() {

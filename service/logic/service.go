@@ -2,9 +2,10 @@ package logic
 
 import (
 	"context"
-	"github.com/nevercase/go-gpt/conf"
 	"log"
 	"os"
+
+	"github.com/nevercase/go-gpt/conf"
 )
 
 type Service struct {
