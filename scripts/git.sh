@@ -39,7 +39,6 @@ function update() {
     exit 0
 }
 
-
 function error() {
     echo "Usage: git.sh {git-path} {fetch|all|checkout|generator|commit|push|update} {name}"
     exit

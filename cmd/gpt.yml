@@ -5,10 +5,10 @@ HttpService:
   ip: "0.0.0.0"
   port: 8080
 
-ScriptsPath: "/Users/nevermore/go/src/go-gpt/scripts/"
-TemplatesPath: "/Users/nevermore/go/src/go-gpt/templates/"
+ScriptsPath: "/Users/nevermore/go/src/github.com/nevercase/go-gpt/scripts/"
+TemplatesPath: "/Users/nevermore/go/src/github.com/nevercase/go-gpt/templates/"
 
-LogFile: "/Users/nevermore/go/src/go-gpt/log/gpt.log"
+LogFile: "/Users/nevermore/go/src/github.com/nevercase/go-gpt/log/gpt.log"
 
 Projects:
   - ["hero", "/Users/nevermore/Documents/saga/hero2", "/svn"]
