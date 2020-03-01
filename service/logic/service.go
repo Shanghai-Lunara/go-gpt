@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/nevercase/go-gpt/conf"
+	"github.com/Shanghai-Lunara/go-gpt/conf"
 )
 
 type Service struct {

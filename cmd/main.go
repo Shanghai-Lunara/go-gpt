@@ -8,8 +8,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nevercase/go-gpt/conf"
-	"github.com/nevercase/go-gpt/service/logic"
+	"github.com/Shanghai-Lunara/go-gpt/conf"
+	"github.com/Shanghai-Lunara/go-gpt/service/logic"
 )
 
 func main() {
