@@ -8,13 +8,13 @@ HttpService:
   templates_path: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/templates/"
 
 Projects:
-  - scripts_path: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/scripts/"
+  - project_name: "projectName"
+    scripts_path: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/scripts/"
     git:
-      name: "projectName"
       work_dir: "/Users/nevermore/projectName"
     svn:
       username: "admin"
       password: "pwd123"
-      name: "projectName"
+      work_dir: "projectName"
       url: "192.168.1.1"
       port: 3690

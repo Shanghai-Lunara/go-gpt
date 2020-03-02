@@ -22,13 +22,13 @@ type Config struct {
 }
 
 type Project struct {
+	ProjectName string    `yaml:"project_name"`
 	ScriptsPath string    `yaml:"scripts_path"`
 	Git         GitConfig `yaml:"git"`
 	Svn         SvnConfig `yaml:"svn"`
 }
 
 type GitConfig struct {
-	Name    string `yaml:"name"`
 	WorkDir string `yaml:"work_dir"`
 }
 
@@ -36,9 +36,9 @@ type SvnConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 
-	Name string `yaml:"name"` // svn dir name
-	Url  string `yaml:"url"`
-	Port int    `yaml:"port"`
+	WorkDir string `yaml:"work_dir"`
+	Url     string `yaml:"url"`
+	Port    int    `yaml:"port"`
 }
 
 var (

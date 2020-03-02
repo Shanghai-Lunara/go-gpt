@@ -9,7 +9,7 @@ function version() {
 }
 
 function add() {
-    svn --username $1 --password $2 add $1
+    svn --username $1 --password $2 add $3
 }
 
 function status() {
@@ -41,7 +41,7 @@ function unlock() {
 }
 
 function error() {
-    echo "Usage: svn.sh {username} {password} {git-path} {checkout|add|status|commit|update|log} {message}"
+    echo "Usage: svn.sh {username} {password} {git-path} {checkout|add|status|commit|update|log} {message|name}"
     exit
 }
 
@@ -54,7 +54,10 @@ case "$4" in
         checkout $1 $2
         ;;
     "add")
-        add $1 $2
+        if [[ -z "$5" ]]; then
+            error
+        fi
+        add $1 $2 $5
         ;;
     "status")
         status $1 $2
