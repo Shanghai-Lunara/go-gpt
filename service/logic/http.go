@@ -17,7 +17,7 @@ type HttpService struct {
 func (s *Service) InitHttpServer() *HttpService {
 	router := gin.New()
 	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: s.Output}), gin.RecoveryWithWriter(s.Output))
-	router.LoadHTMLGlob(fmt.Sprintf("%s/*", s.C.TemplatesPath))
+	router.LoadHTMLGlob(fmt.Sprintf("%s/*", s.C.Http.TemplatesPath))
 	router.GET("/", func(c *gin.Context) {
 		all, err := s.GitHub.handleAll()
 		if err != nil {

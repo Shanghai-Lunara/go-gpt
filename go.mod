@@ -1,4 +1,4 @@
-module github.com/nevercase/go-gpt
+module github.com/Shanghai-Lunara/go-gpt
 
 go 1.12
 

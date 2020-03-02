@@ -16,7 +16,6 @@ import (
 
 type GitHub struct {
 	mu         sync.RWMutex
-	ScriptPath string
 	Gits       map[string]*Git
 }
 
@@ -207,14 +206,13 @@ func (g *Git) GetCurrentTask() string {
 
 func (s *Service) NewGitHub() *GitHub {
 	g := &GitHub{
-		ScriptPath: fmt.Sprintf("%s%s", s.C.ScriptsPath, "git.sh"),
 		Gits:       make(map[string]*Git, 0),
 	}
 	for _, v := range s.C.Projects {
 		git := &Git{
-			ScriptPath:     g.ScriptPath,
-			Path:           v[1],
-			Name:           v[0],
+			ScriptPath:     fmt.Sprintf("%s%s", v.ScriptsPath, "git.sh"),
+			Path:           v.Git.WorkDir,
+			Name:           v.Git.Name,
 			ActiveBranch:   "",
 			LocalBranches:  make(map[string]int, 0),
 			RemoteBranches: make(map[string]int, 0),

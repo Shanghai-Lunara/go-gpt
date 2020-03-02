@@ -9,21 +9,36 @@ import (
 )
 
 type HttpConfig struct {
-	IP   string `yaml:"ip"`
-	Port int    `yaml:"port"`
-}
-
-type ProjectsConfig struct {
-	Projects [][]string `yaml:"Projects,flow"`
+	IP            string `yaml:"ip"`
+	Port          int    `yaml:"port"`
+	TemplatesPath string `yaml:"templates_path"`
 }
 
 type Config struct {
-	Http           HttpConfig `yaml:"HttpService"`
-	LogFile        string     `yaml:"LogFile"`
-	ScriptsPath    string     `yaml:"ScriptsPath"`
-	TemplatesPath  string     `yaml:"TemplatesPath"`
-	ProjectsConfig `yaml:",inline"`
-	ConfigPath     string
+	Http       HttpConfig `yaml:"HttpService"`
+	LogFile    string     `yaml:"LogFile"`
+	Projects   []Project  `yaml:"Projects"`
+	ConfigPath string
+}
+
+type Project struct {
+	ScriptsPath string    `yaml:"scripts_path"`
+	Git         GitConfig `yaml:"git"`
+	Svn         SvnConfig `yaml:"svn"`
+}
+
+type GitConfig struct {
+	Name    string `yaml:"name"`
+	WorkDir string `yaml:"work_dir"`
+}
+
+type SvnConfig struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+
+	Name string `yaml:"name"` // svn dir name
+	Url  string `yaml:"url"`
+	Port int    `yaml:"port"`
 }
 
 var (

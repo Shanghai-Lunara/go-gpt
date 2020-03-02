@@ -23,7 +23,6 @@ function generatorData() {
     git add --all
 }
 
-
 function commit() {
     git status
     git commit -a -m "gen plist data by go-gpt"

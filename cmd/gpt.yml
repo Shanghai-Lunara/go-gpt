@@ -1,15 +1,20 @@
 # This is the configuration file for the go-gpt.
 
+LogFile: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/log/gpt.log"
 
 HttpService:
   ip: "0.0.0.0"
   port: 8080
-
-ScriptsPath: "/Users/nevermore/go/src/github.com/nevercase/go-gpt/scripts/"
-TemplatesPath: "/Users/nevermore/go/src/github.com/nevercase/go-gpt/templates/"
-
-LogFile: "/Users/nevermore/go/src/github.com/nevercase/go-gpt/log/gpt.log"
+  templates_path: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/templates/"
 
 Projects:
-  - ["hero", "/Users/nevermore/Documents/saga/hero2", "/svn"]
-  - ["emblem", "/Users/nevermore/Documents/saga/emblem", "/svn"]
+  - scripts_path: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/scripts/"
+    git:
+      name: "projectName"
+      work_dir: "/Users/nevermore/projectName"
+    svn:
+      username: "admin"
+      password: "pwd123"
+      name: "projectName"
+      url: "192.168.1.1"
+      port: 3690

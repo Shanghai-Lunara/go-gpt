@@ -2,3 +2,4 @@ log
 vendor
 gogpt
 up.sh
+fake*.y*ml
