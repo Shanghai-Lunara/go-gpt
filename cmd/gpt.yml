@@ -15,6 +15,7 @@ Projects:
     svn:
       username: "admin"
       password: "pwd123"
-      work_dir: "projectName"
+      work_dir: "/Users/nevermore/svn/"
       url: "192.168.1.1"
       port: 3690
+      remote_dir: "projectName_dir"

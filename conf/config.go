@@ -36,9 +36,10 @@ type SvnConfig struct {
 	Username string `yaml:"username"`
 	Password string `yaml:"password"`
 
-	WorkDir string `yaml:"work_dir"`
-	Url     string `yaml:"url"`
-	Port    int    `yaml:"port"`
+	WorkDir   string `yaml:"work_dir"`
+	Url       string `yaml:"url"`
+	Port      int    `yaml:"port"`
+	RemoteDir string `yaml:"remote_dir"`
 }
 
 var (
