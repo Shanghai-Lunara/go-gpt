@@ -2,11 +2,14 @@ package logic
 
 import (
 	"context"
+	"encoding/xml"
 	"errors"
 	"fmt"
 	"log"
 	"os/exec"
+	"strconv"
 	"sync"
+	"time"
 
 	"github.com/Shanghai-Lunara/go-gpt/conf"
 )
@@ -19,7 +22,9 @@ type SvnOperator interface {
 	Clean() error
 	Commit(message string) error
 	Log(number int) (res []string, err error)
-} 
+	ExecuteWithArgs(args ...string) (res []byte, err error)
+	Timer()
+}
 
 const SvnUrl = "svn://%s@%s:%d/%s"
 
@@ -28,10 +33,11 @@ const (
 
 	cmdCheckOut = "checkout"
 	cmdUpdate   = "update"
-	cmdStatus = "status"
-	cmdAddAll = "addAll"
-	cmdClean = "clean"
-	cmdCommit = "commit"
+	cmdStatus   = "status"
+	cmdAddAll   = "addAll"
+	cmdClean    = "clean"
+	cmdCommit   = "commit"
+	cmdLog      = "log"
 )
 
 type SvnHub struct {
@@ -90,6 +96,9 @@ func NewSvnHub(c *conf.Config, ctx context.Context) *SvnHub {
 		if err := svn.Status(); err != nil {
 			log.Println(err)
 		}
+		if _, err := svn.Log(2); err != nil {
+			log.Println(err)
+		}
 	}
 	return sh
 }
@@ -142,23 +151,65 @@ func (s *Svn) Commit(message string) error {
 	return nil
 }
 
-func (s *Svn) Log(number int) (res []string, err error) {
-
-	return res, err
+type LogResponse struct {
+	XMLName   xml.Name   `xml:"log"`
+	Logentrys []Logentry `xml:"logentry" json:"logentrys"`
 }
 
-func (s *Svn) ExecuteWithArgs(args ...string) (res []byte,err error) {
+type Logentry struct {
+	Revision string    `xml:"revision,attr" json:"revision"`
+	Author   string    `xml:"author" json:"author"`
+	DateTime time.Time `xml:"date" json:"date_time"`
+	Msg      string    `xml:"msg" json:"msg"`
+	Paths    []Path    `xml:"paths>path" json:"paths"`
+}
+
+type Path struct {
+	Action   string `xml:"action,attr"`
+	PropMods string `xml:"prop-mods,attr"`
+	TextMods string `xml:"text-mods,attr"`
+	Kind     string `xml:"kind,attr"`
+	Value    string `xml:",chardata"`
+}
+
+func (s *Svn) Log(number int) (res []string, err error) {
+	out, err := s.ExecuteWithArgs(cmdLog, strconv.Itoa(number))
+	if err != nil {
+		return res, err
+	}
+	rest := LogResponse{}
+	if err := xml.Unmarshal(out, &rest); err != nil {
+		return res, err
+	}
+	log.Println("rest:", rest)
+	return res, nil
+}
+
+func (s *Svn) Info() error {
+	return nil
+}
+
+func (s *Svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
 	t := append([]string{s.ScriptPath, s.Username, s.Password, s.WorkDir, s.RemoteDir}, args...)
 	out, err := exec.Command("sh", t...).Output()
 	if err != nil {
 		return out, errors.New(fmt.Sprintf("Svn %s exec.Command err:%v\n", args[0], err))
 	}
 	log.Printf("Svn Command `%s` output:\n%s\n", args[0], string(out))
-	return out, err
+	return out, nil
 }
 
-func (s *Svn) LoopChan() {
+func (s *Svn) Timer() {
+	tick := time.NewTicker(time.Second * 10)
+	defer tick.Stop()
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-tick.C:
 
+		}
+	}
 }
 
 func (s *Svn) handle() {

@@ -46,11 +46,11 @@ function update() {
 }
 
 function info() {
-    svn --username $1 --password $2 info
+    svn --username $1 --password $2 info --xml
 }
 
 function log() {
-    svn --username $1 --password $2 log -l $3 -v
+    svn --username $1 --password $2 log -l $3 -v --xml
 }
 
 function lock() {
