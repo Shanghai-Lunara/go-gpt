@@ -16,6 +16,12 @@ import (
 	"github.com/Shanghai-Lunara/go-gpt/conf"
 )
 
+type GitOperator interface {
+	FetchAll() error
+	ShowAll(lock bool) error
+	CheckOutBranch(name string) error
+}
+
 type GitHub struct {
 	mu   sync.RWMutex
 	Gits map[string]*Git

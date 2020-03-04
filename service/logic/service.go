@@ -11,7 +11,7 @@ import (
 type Service struct {
 	C           *conf.Config
 	GitHub      *GitHub
-	SvnHub      *SvnHub
+	ProjectHub  *ProjectHub
 	HttpService *HttpService
 	Output      *os.File
 	ctx         context.Context
@@ -26,12 +26,12 @@ func NewService(c *conf.Config) *Service {
 	log.SetOutput(file)
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		C:      c,
-		GitHub: NewGitHub(c, ctx),
-		SvnHub: NewSvnHub(c, ctx),
-		ctx:    ctx,
-		Output: file,
-		cancel: cancel,
+		C:          c,
+		GitHub:     NewGitHub(c, ctx),
+		ProjectHub: NewProjectHub(c, ctx),
+		ctx:        ctx,
+		Output:     file,
+		cancel:     cancel,
 	}
 	s.HttpService = s.InitHttpServer()
 	return s

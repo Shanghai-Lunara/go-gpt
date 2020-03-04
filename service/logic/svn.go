@@ -41,12 +41,6 @@ const (
 	cmdLog      = "log"
 )
 
-type SvnHub struct {
-	mu           sync.RWMutex
-	Svns         map[string]*SvnOperator
-	TaskChannels map[string]chan *Command
-}
-
 type Svn struct {
 	mu sync.RWMutex
 
@@ -65,36 +59,26 @@ type Svn struct {
 	ctx context.Context
 }
 
-func NewSvnHub(c *conf.Config, ctx context.Context) *SvnHub {
-	sh := &SvnHub{
-		Svns:         make(map[string]*SvnOperator, 0),
-		TaskChannels: make(map[string]chan *Command, 0),
+func NewSvnOperator(v *conf.Project, ctx context.Context) *SvnOperator {
+	var svn SvnOperator = &Svn{
+		ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, scriptName),
+		ProjectName: v.ProjectName,
+		Username:    v.Svn.Username,
+		Password:    v.Svn.Password,
+		WorkDir:     v.Svn.WorkDir,
+		Url:         v.Svn.Url,
+		Port:        v.Svn.Port,
+		RemoteDir:   v.Svn.RemoteDir,
+		SvnUrl:      fmt.Sprintf(SvnUrl, v.Svn.Username, v.Svn.Url, v.Svn.Port, v.Svn.RemoteDir),
+		ctx:         ctx,
 	}
-	for _, v := range c.Projects {
-		ch := make(chan *Command, 0)
-		var svn SvnOperator = &Svn{
-			ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, scriptName),
-			ProjectName: v.ProjectName,
-			Username:    v.Svn.Username,
-			Password:    v.Svn.Password,
-			WorkDir:     v.Svn.WorkDir,
-			Url:         v.Svn.Url,
-			Port:        v.Svn.Port,
-			RemoteDir:   v.Svn.RemoteDir,
-			SvnUrl:      fmt.Sprintf(SvnUrl, v.Svn.Username, v.Svn.Url, v.Svn.Port, v.Svn.RemoteDir),
-			ctx:         ctx,
-		}
-		sh.Svns[v.ProjectName] = &svn
-		sh.TaskChannels[v.ProjectName] = ch
-		if err := svn.CheckOut(); err != nil {
-			log.Println(err)
-		}
-		if err := svn.Update(); err != nil {
-			log.Println(err)
-		}
-		go svn.Timer()
+	if err := svn.CheckOut(); err != nil {
+		log.Println(err)
 	}
-	return sh
+	if err := svn.Update(); err != nil {
+		log.Println(err)
+	}
+	return &svn
 }
 
 func (s *Svn) CheckOut() error {
