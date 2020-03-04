@@ -38,6 +38,11 @@ function update() {
     exit 0
 }
 
+function svnSync() {
+    ./devploy_svn.sh $1
+    exit 0
+}
+
 function error() {
     echo "Usage: git.sh {git-path} {fetch|all|checkout|generator|commit|push|update} {name}"
     exit
@@ -71,6 +76,12 @@ case "$2" in
         ;;
     "update")
         update
+        ;;
+    "svn")
+        if [[ -z "$3" ]]; then
+            error
+        fi
+        svnSync $3
         ;;
     *)
         error

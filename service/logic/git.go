@@ -147,6 +147,15 @@ func (g *Git) Update(name string) (err error) {
 	return nil
 }
 
+func (g *Git) SvnSync(name, svnTag string) (err error) {
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "svnSync", name, svnTag).Output(); err != nil {
+		return errors.New(fmt.Sprintf("svnSync exec.Command name:%s err:%v\n", g.Name, err))
+	} else {
+		log.Println("out:", string(out))
+	}
+	return nil
+}
+
 func (g *Git) ChangeTaskCount(incr int32) {
 	atomic.AddInt32(&g.TaskCount, incr)
 }

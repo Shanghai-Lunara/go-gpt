@@ -20,10 +20,11 @@ type SvnOperator interface {
 	Status() error
 	AddAll() error
 	Clean() error
-	Commit(message string) error
-	Log(number int) (res []string, err error)
+	Commit(handleFunc func() error, message string) error
+	Log(number int) (res []Logentry, err error)
 	ExecuteWithArgs(args ...string) (res []byte, err error)
 	Timer()
+	Listener(ch chan *Command)
 }
 
 const SvnUrl = "svn://%s@%s:%d/%s"
@@ -41,8 +42,9 @@ const (
 )
 
 type SvnHub struct {
-	mu   sync.RWMutex
-	Svns map[string]*SvnOperator
+	mu           sync.RWMutex
+	Svns         map[string]*SvnOperator
+	TaskChannels map[string]chan *Command
 }
 
 type Svn struct {
@@ -65,9 +67,11 @@ type Svn struct {
 
 func NewSvnHub(c *conf.Config, ctx context.Context) *SvnHub {
 	sh := &SvnHub{
-		Svns: make(map[string]*SvnOperator, 0),
+		Svns:         make(map[string]*SvnOperator, 0),
+		TaskChannels: make(map[string]chan *Command, 0),
 	}
 	for _, v := range c.Projects {
+		ch := make(chan *Command, 0)
 		var svn SvnOperator = &Svn{
 			ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, scriptName),
 			ProjectName: v.ProjectName,
@@ -81,29 +85,21 @@ func NewSvnHub(c *conf.Config, ctx context.Context) *SvnHub {
 			ctx:         ctx,
 		}
 		sh.Svns[v.ProjectName] = &svn
+		sh.TaskChannels[v.ProjectName] = ch
 		if err := svn.CheckOut(); err != nil {
 			log.Println(err)
 		}
 		if err := svn.Update(); err != nil {
 			log.Println(err)
 		}
-		if err := svn.Status(); err != nil {
-			log.Println(err)
-		}
-		if err := svn.Clean(); err != nil {
-			log.Println(err)
-		}
-		if err := svn.Status(); err != nil {
-			log.Println(err)
-		}
-		if _, err := svn.Log(2); err != nil {
-			log.Println(err)
-		}
+		go svn.Timer()
 	}
 	return sh
 }
 
 func (s *Svn) CheckOut() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdCheckOut, s.SvnUrl)
 	if err != nil {
 		return err
@@ -112,6 +108,8 @@ func (s *Svn) CheckOut() error {
 }
 
 func (s *Svn) Update() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdUpdate)
 	if err != nil {
 		return err
@@ -120,6 +118,8 @@ func (s *Svn) Update() error {
 }
 
 func (s *Svn) Status() error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	_, err := s.ExecuteWithArgs(cmdStatus)
 	if err != nil {
 		return err
@@ -128,6 +128,8 @@ func (s *Svn) Status() error {
 }
 
 func (s *Svn) AddAll() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdAddAll)
 	if err != nil {
 		return err
@@ -136,6 +138,8 @@ func (s *Svn) AddAll() error {
 }
 
 func (s *Svn) Clean() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdClean)
 	if err != nil {
 		return err
@@ -143,7 +147,12 @@ func (s *Svn) Clean() error {
 	return nil
 }
 
-func (s *Svn) Commit(message string) error {
+func (s *Svn) Commit(handleFunc func() error, message string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := handleFunc(); err != nil {
+		return errors.New(fmt.Sprintf("Svn commit handleFunc err:%v", err))
+	}
 	_, err := s.ExecuteWithArgs(cmdCommit, message)
 	if err != nil {
 		return err
@@ -157,22 +166,24 @@ type LogResponse struct {
 }
 
 type Logentry struct {
-	Revision string    `xml:"revision,attr" json:"revision"`
-	Author   string    `xml:"author" json:"author"`
-	DateTime time.Time `xml:"date" json:"date_time"`
-	Msg      string    `xml:"msg" json:"msg"`
-	Paths    []Path    `xml:"paths>path" json:"paths"`
+	Revision string    `xml:"revision,attr" json:"revision,omitempty"`
+	Author   string    `xml:"author" json:"author,omitempty"`
+	DateTime time.Time `xml:"date" json:"date_time,omitempty"`
+	Msg      string    `xml:"msg" json:"msg,omitempty"`
+	Paths    []Path    `xml:"paths>path" json:"paths,omitempty"`
 }
 
 type Path struct {
-	Action   string `xml:"action,attr"`
-	PropMods string `xml:"prop-mods,attr"`
-	TextMods string `xml:"text-mods,attr"`
-	Kind     string `xml:"kind,attr"`
-	Value    string `xml:",chardata"`
+	Action   string `xml:"action,attr" json:"action,omitempty"`
+	PropMods string `xml:"prop-mods,attr" json:"prop_mods,omitempty"`
+	TextMods string `xml:"text-mods,attr" json:"text_mods,omitempty"`
+	Kind     string `xml:"kind,attr" json:"kind,omitempty"`
+	Value    string `xml:",chardata" json:"value,omitempty"`
 }
 
-func (s *Svn) Log(number int) (res []string, err error) {
+func (s *Svn) Log(number int) (res []Logentry, err error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	out, err := s.ExecuteWithArgs(cmdLog, strconv.Itoa(number))
 	if err != nil {
 		return res, err
@@ -181,12 +192,7 @@ func (s *Svn) Log(number int) (res []string, err error) {
 	if err := xml.Unmarshal(out, &rest); err != nil {
 		return res, err
 	}
-	log.Println("rest:", rest)
-	return res, nil
-}
-
-func (s *Svn) Info() error {
-	return nil
+	return rest.Logentrys, nil
 }
 
 func (s *Svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
@@ -207,7 +213,27 @@ func (s *Svn) Timer() {
 		case <-s.ctx.Done():
 			return
 		case <-tick.C:
+			if err := s.Update(); err != nil {
+				log.Println(err)
+			}
+		}
+	}
+}
 
+func (s *Svn) Listener(ch chan *Command) {
+	defer close(ch)
+	for {
+		select {
+		case c, isClose := <-ch:
+			if !isClose {
+				return
+			}
+			log.Println("cmd:", *c)
+			if _, err := s.ExecuteWithArgs(c.command, c.message); err != nil {
+				log.Println("Listener exc err:", err)
+			}
+		case <-s.ctx.Done():
+			return
 		}
 	}
 }

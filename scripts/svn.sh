@@ -4,10 +4,6 @@ function checkout() {
     svn --username $1 --password $2 checkout $3
 }
 
-function version() {
-    svn --username $1 --password $2
-}
-
 function add() {
     svn --username $1 --password $2 add $3
 }
@@ -25,7 +21,7 @@ function revert() {
 }
 
 function revertAll() {
-    svn --username $1 --password $2 status | grep 'M\|A\|!' | awk '{print $2}' | xargs svn --username $1 --password $2 revert --depth infinity
+    svn --username $1 --password $2 status | awk '{print $2}' | xargs svn --username $1 --password $2 revert --depth infinity
 }
 
 function removeAll() {
@@ -38,10 +34,12 @@ function clean() {
 }
 
 function commit() {
+    addAll $1 $2
     svn --username $1 --password $2 commit --message "${3}Committed by ${1}@go-gpt"
 }
 
 function update() {
+    clean $1 $2
     svn --username $1 --password $2 update
 }
 
