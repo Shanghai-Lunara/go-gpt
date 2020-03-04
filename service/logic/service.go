@@ -6,12 +6,12 @@ import (
 	"os"
 
 	"github.com/Shanghai-Lunara/go-gpt/conf"
+	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
 )
 
 type Service struct {
 	C           *conf.Config
-	GitHub      *GitHub
-	ProjectHub  *ProjectHub
+	Project     *operator.Project
 	HttpService *HttpService
 	Output      *os.File
 	ctx         context.Context
@@ -26,12 +26,11 @@ func NewService(c *conf.Config) *Service {
 	log.SetOutput(file)
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
-		C:          c,
-		GitHub:     NewGitHub(c, ctx),
-		ProjectHub: NewProjectHub(c, ctx),
-		ctx:        ctx,
-		Output:     file,
-		cancel:     cancel,
+		C:       c,
+		Project: operator.NewProject(c, ctx),
+		ctx:     ctx,
+		Output:  file,
+		cancel:  cancel,
 	}
 	s.HttpService = s.InitHttpServer()
 	return s

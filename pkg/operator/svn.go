@@ -1,4 +1,4 @@
-package logic
+package operator
 
 import (
 	"context"
@@ -10,24 +10,24 @@ import (
 	"strconv"
 	"sync"
 	"time"
-
-	"github.com/Shanghai-Lunara/go-gpt/conf"
 )
 
 type SvnOperator interface {
+	Lock()
+	Unlock()
 	CheckOut() error
 	Update() error
 	Status() error
 	AddAll() error
 	Clean() error
-	Commit(handleFunc func() error, message string) error
+	Commit(svnMessage string) error
 	Log(number int) (res []Logentry, err error)
 	ExecuteWithArgs(args ...string) (res []byte, err error)
 	Timer()
 	Listener(ch chan *Command)
 }
 
-const SvnUrl = "svn://%s@%s:%d/%s"
+const svnUrl = "svn://%s@%s:%d/%s"
 
 const (
 	scriptName = "svn.sh"
@@ -41,7 +41,7 @@ const (
 	cmdLog      = "log"
 )
 
-type Svn struct {
+type svn struct {
 	mu sync.RWMutex
 
 	ScriptPath  string `json:"script_path"`
@@ -59,29 +59,15 @@ type Svn struct {
 	ctx context.Context
 }
 
-func NewSvnOperator(v *conf.Project, ctx context.Context) *SvnOperator {
-	var svn SvnOperator = &Svn{
-		ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, scriptName),
-		ProjectName: v.ProjectName,
-		Username:    v.Svn.Username,
-		Password:    v.Svn.Password,
-		WorkDir:     v.Svn.WorkDir,
-		Url:         v.Svn.Url,
-		Port:        v.Svn.Port,
-		RemoteDir:   v.Svn.RemoteDir,
-		SvnUrl:      fmt.Sprintf(SvnUrl, v.Svn.Username, v.Svn.Url, v.Svn.Port, v.Svn.RemoteDir),
-		ctx:         ctx,
-	}
-	if err := svn.CheckOut(); err != nil {
-		log.Println(err)
-	}
-	if err := svn.Update(); err != nil {
-		log.Println(err)
-	}
-	return &svn
+func (s *svn) Lock() {
+	s.mu.Lock()
 }
 
-func (s *Svn) CheckOut() error {
+func (s *svn) Unlock() {
+	s.mu.Unlock()
+}
+
+func (s *svn) CheckOut() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdCheckOut, s.SvnUrl)
@@ -91,7 +77,7 @@ func (s *Svn) CheckOut() error {
 	return nil
 }
 
-func (s *Svn) Update() error {
+func (s *svn) Update() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdUpdate)
@@ -101,7 +87,7 @@ func (s *Svn) Update() error {
 	return nil
 }
 
-func (s *Svn) Status() error {
+func (s *svn) Status() error {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	_, err := s.ExecuteWithArgs(cmdStatus)
@@ -111,7 +97,7 @@ func (s *Svn) Status() error {
 	return nil
 }
 
-func (s *Svn) AddAll() error {
+func (s *svn) AddAll() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdAddAll)
@@ -121,7 +107,7 @@ func (s *Svn) AddAll() error {
 	return nil
 }
 
-func (s *Svn) Clean() error {
+func (s *svn) Clean() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	_, err := s.ExecuteWithArgs(cmdClean)
@@ -131,12 +117,7 @@ func (s *Svn) Clean() error {
 	return nil
 }
 
-func (s *Svn) Commit(handleFunc func() error, message string) error {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if err := handleFunc(); err != nil {
-		return errors.New(fmt.Sprintf("Svn commit handleFunc err:%v", err))
-	}
+func (s *svn) Commit(message string) error {
 	_, err := s.ExecuteWithArgs(cmdCommit, message)
 	if err != nil {
 		return err
@@ -165,7 +146,7 @@ type Path struct {
 	Value    string `xml:",chardata" json:"value,omitempty"`
 }
 
-func (s *Svn) Log(number int) (res []Logentry, err error) {
+func (s *svn) Log(number int) (res []Logentry, err error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	out, err := s.ExecuteWithArgs(cmdLog, strconv.Itoa(number))
@@ -179,7 +160,7 @@ func (s *Svn) Log(number int) (res []Logentry, err error) {
 	return rest.Logentrys, nil
 }
 
-func (s *Svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
+func (s *svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
 	t := append([]string{s.ScriptPath, s.Username, s.Password, s.WorkDir, s.RemoteDir}, args...)
 	out, err := exec.Command("sh", t...).Output()
 	if err != nil {
@@ -189,7 +170,7 @@ func (s *Svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
 	return out, nil
 }
 
-func (s *Svn) Timer() {
+func (s *svn) Timer() {
 	tick := time.NewTicker(time.Second * 10)
 	defer tick.Stop()
 	for {
@@ -204,7 +185,7 @@ func (s *Svn) Timer() {
 	}
 }
 
-func (s *Svn) Listener(ch chan *Command) {
+func (s *svn) Listener(ch chan *Command) {
 	defer close(ch)
 	for {
 		select {
@@ -222,6 +203,24 @@ func (s *Svn) Listener(ch chan *Command) {
 	}
 }
 
-func (s *Svn) handle() {
-
+func NewSvnOperator(v *ProjectConfig, ctx context.Context) SvnOperator {
+	var svn SvnOperator = &svn{
+		ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, scriptName),
+		ProjectName: v.ProjectName,
+		Username:    v.Svn.Username,
+		Password:    v.Svn.Password,
+		WorkDir:     v.Svn.WorkDir,
+		Url:         v.Svn.Url,
+		Port:        v.Svn.Port,
+		RemoteDir:   v.Svn.RemoteDir,
+		SvnUrl:      fmt.Sprintf(svnUrl, v.Svn.Username, v.Svn.Url, v.Svn.Port, v.Svn.RemoteDir),
+		ctx:         ctx,
+	}
+	if err := svn.CheckOut(); err != nil {
+		log.Println(err)
+	}
+	if err := svn.Update(); err != nil {
+		log.Println(err)
+	}
+	return svn
 }

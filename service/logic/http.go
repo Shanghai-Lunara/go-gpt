@@ -7,11 +7,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
 	"github.com/gin-gonic/gin"
 )
 
 type HttpService struct {
-	server *http.Server
+	server  *http.Server
+	project *operator.Project
 }
 
 func (s *Service) InitHttpServer() *HttpService {
@@ -19,23 +21,23 @@ func (s *Service) InitHttpServer() *HttpService {
 	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: s.Output}), gin.RecoveryWithWriter(s.Output))
 	router.LoadHTMLGlob(fmt.Sprintf("%s/*", s.C.Http.TemplatesPath))
 	router.GET("/", func(c *gin.Context) {
-		all, err := s.GitHub.handleAll()
-		if err != nil {
-			log.Println("handleAll err:", err)
-			all = "{}"
-		}
-		c.HTML(http.StatusOK, "all.html", map[string]string{"all": all})
+		//all, err := s.GitHub.handleAll()
+		//if err != nil {
+		//	log.Println("handleAll err:", err)
+		//	all = "{}"
+		//}
+		//c.HTML(http.StatusOK, "all.html", map[string]string{"all": all})
 	})
 	router.GET("/gen/:name/:branch/:command", func(c *gin.Context) {
 		log.Println("params:", c.Params)
-		command := &Command{
-			projectName: c.Param("name"),
-			branchName:  c.Param("branch"),
-			command:     c.Param("command"),
-		}
-		if err := s.GitHub.handleCommand(command); err != nil {
-			log.Println("s.GitHub.handleCommand err:", err)
-		}
+		//command := &Command{
+		//	projectName: c.Param("name"),
+		//	branchName:  c.Param("branch"),
+		//	command:     c.Param("command"),
+		//}
+		//if err := s.GitHub.handleCommand(command); err != nil {
+		//	log.Println("s.GitHub.handleCommand err:", err)
+		//}
 		c.String(http.StatusOK, "success")
 	})
 	server := &http.Server{
@@ -47,7 +49,7 @@ func (s *Service) InitHttpServer() *HttpService {
 			if err == http.ErrServerClosed {
 				log.Println("Server closed under request")
 			} else {
-				log.Fatal("Server closed unexpect err:", err)
+				log.Fatal("Server closed unexpected err:", err)
 			}
 		}
 	}()

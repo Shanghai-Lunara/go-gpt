@@ -1,4 +1,4 @@
-package logic
+package operator
 
 type Command struct {
 	projectName string

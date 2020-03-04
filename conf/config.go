@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
+
+	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
 )
 
 type HttpConfig struct {
@@ -15,31 +17,10 @@ type HttpConfig struct {
 }
 
 type Config struct {
-	Http       HttpConfig `yaml:"HttpService"`
-	LogFile    string     `yaml:"LogFile"`
-	Projects   []Project  `yaml:"Projects"`
+	Http       HttpConfig               `yaml:"HttpService"`
+	LogFile    string                   `yaml:"LogFile"`
+	Projects   []operator.ProjectConfig `yaml:"Projects"`
 	ConfigPath string
-}
-
-type Project struct {
-	ProjectName string    `yaml:"project_name"`
-	ScriptsPath string    `yaml:"scripts_path"`
-	Git         GitConfig `yaml:"git"`
-	Svn         SvnConfig `yaml:"svn"`
-}
-
-type GitConfig struct {
-	WorkDir string `yaml:"work_dir"`
-}
-
-type SvnConfig struct {
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
-
-	WorkDir   string `yaml:"work_dir"`
-	Url       string `yaml:"url"`
-	Port      int    `yaml:"port"`
-	RemoteDir string `yaml:"remote_dir"`
 }
 
 var (

@@ -1,4 +1,4 @@
-package logic
+package operator
 
 import (
 	"context"
@@ -20,6 +20,15 @@ type GitOperator interface {
 	FetchAll() error
 	ShowAll(lock bool) error
 	CheckOutBranch(name string) error
+	Generator(name string) error
+	Commit(name string) error
+	Push(name string) error
+	Update(name string) error
+	SvnSync(name string) error
+	ChangeTaskCount(incr int32)
+	Common(name string) error
+	LoopChan()
+	GetCurrentTask() string
 }
 
 type GitHub struct {
@@ -153,8 +162,8 @@ func (g *Git) Update(name string) (err error) {
 	return nil
 }
 
-func (g *Git) SvnSync(name, svnTag string) (err error) {
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "svnSync", name, svnTag).Output(); err != nil {
+func (g *Git) SvnSync(name string) (err error) {
+	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "svnSync", name, "svntag").Output(); err != nil {
 		return errors.New(fmt.Sprintf("svnSync exec.Command name:%s err:%v\n", g.Name, err))
 	} else {
 		log.Println("out:", string(out))
@@ -219,6 +228,23 @@ func (g *Git) GetCurrentTask() string {
 	} else {
 		return fmt.Sprintf("%s-%s-%s", g.CurrentTask.projectName, g.CurrentTask.branchName, g.CurrentTask.command)
 	}
+}
+
+func NewGitOperator(v *ProjectConfig, ctx context.Context) GitOperator {
+	var git GitOperator = &Git{
+		ScriptPath:     fmt.Sprintf("%s%s", v.ScriptsPath, "git.sh"),
+		Path:           v.Git.WorkDir,
+		Name:           v.ProjectName,
+		ActiveBranch:   "",
+		LocalBranches:  make(map[string]int, 0),
+		RemoteBranches: make(map[string]int, 0),
+		ListBranches:   make([]string, 0),
+		TaskCount:      0,
+		TaskChan:       make(chan *Command, 1024),
+		ctx:            ctx,
+	}
+	go git.LoopChan()
+	return git
 }
 
 func NewGitHub(c *conf.Config, ctx context.Context) *GitHub {
