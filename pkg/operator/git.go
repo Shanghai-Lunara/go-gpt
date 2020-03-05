@@ -31,6 +31,7 @@ type GitOperator interface {
 	LoopChan()
 	GetCurrentTask() string
 	HandleCommand(c *Command) error
+	GetGitInfo() GitInfo
 }
 
 const (

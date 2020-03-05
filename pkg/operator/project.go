@@ -9,6 +9,7 @@ import (
 type Project interface {
 	Add(projectName string, p *project)
 	GetProject(projectName string) (p *project, err error)
+	GetGitInfo(projectName string) (gi GitInfo, err error)
 	GitGenerate(projectName, branchName string) error
 	SvnCommit(projectName, branchName, svnMessage string) error
 	SvnLog(projectName string, number int) (res []Logentry, err error)
@@ -42,13 +43,12 @@ func (ph *projects) GetProject(projectName string) (p *project, err error) {
 	}
 }
 
-func (ph *projects) GetGitInfo(projectName string) (err error) {
+func (ph *projects) GetGitInfo(projectName string) (gi GitInfo, err error) {
 	p, err := ph.GetProject(projectName)
 	if err != nil {
-		return err
+		return gi, err
 	}
-	_ = p
-	return nil
+	return p.Git.GetGitInfo(), nil
 }
 
 func (ph *projects) GitGenerate(projectName, branchName string) error {
