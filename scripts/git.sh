@@ -15,7 +15,7 @@ function changeBranch() {
     exit 0
 }
 
-function generatorData() {
+function generateData() {
     git pull
     cd tools/gen_const_sheet
     ./gen_const_sheet.sh
@@ -44,7 +44,7 @@ function svnSync() {
 }
 
 function error() {
-    echo "Usage: git.sh {git-path} {fetch|all|checkout|generator|commit|push|update} {name}"
+    echo "Usage: git.sh {git-path} {fetch|showAll|checkout|generate|commit|push|update} {name}"
     exit
 }
 
@@ -56,7 +56,7 @@ case "$2" in
     "fetch")
         fetch
         ;;
-    "all")
+    "showAll")
         showAll
         ;;
     "checkout")
@@ -65,8 +65,8 @@ case "$2" in
         fi
         changeBranch $3 $4
         ;;
-    "generator")
-        generatorData
+    "generate")
+        generateData
         ;;
     "commit")
         commit

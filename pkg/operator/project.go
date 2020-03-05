@@ -4,8 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-
-	"github.com/Shanghai-Lunara/go-gpt/conf"
 )
 
 type Project interface {
@@ -58,8 +56,13 @@ func (ph *projects) GitGenerate(projectName, branchName string) error {
 	if err != nil {
 		return err
 	}
-	// todo need async
-	return p.Git.Common(branchName)
+	c := &Command{
+		projectName: projectName,
+		branchName:  branchName,
+		command:     "",
+		message:     "",
+	}
+	return p.Git.HandleCommand(c)
 }
 
 func (ph *projects) SvnCommit(projectName, branchName, svnMessage string) error {
@@ -83,11 +86,11 @@ func (ph *projects) SvnLog(projectName string, number int) (res []Logentry, err 
 	return p.Svn.Log(number)
 }
 
-func NewProject(conf *conf.Config, ctx context.Context) *Project {
+func NewProject(conf []ProjectConfig, ctx context.Context) *Project {
 	var ph Project = &projects{
 		projects: make(map[string]*project, 0),
 	}
-	for _, v := range conf.Projects {
+	for _, v := range conf {
 		p := &project{
 			Git: NewGitOperator(&v, ctx),
 			Svn: NewSvnOperator(&v, ctx),

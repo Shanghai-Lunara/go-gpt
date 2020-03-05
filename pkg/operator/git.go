@@ -2,7 +2,6 @@ package operator
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -12,177 +11,205 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/Shanghai-Lunara/go-gpt/conf"
 )
 
 type GitOperator interface {
+	GetBranchFullName(name string) string
+	GetBranchShortName(name string) string
+	ExecuteWithArgs(args ...string) (res []byte, err error)
 	FetchAll() error
 	ShowAll(lock bool) error
 	CheckOutBranch(name string) error
-	Generator(name string) error
+	Generate(name string) error
 	Commit(name string) error
 	Push(name string) error
 	Update(name string) error
+	Common(name string) error
+	SetSvnTag(name, tag string) error
 	SvnSync(name string) error
 	ChangeTaskCount(incr int32)
-	Common(name string) error
 	LoopChan()
 	GetCurrentTask() string
+	HandleCommand(c *Command) error
 }
 
-type GitHub struct {
-	mu   sync.RWMutex
-	Gits map[string]*Git
-}
+const (
+	errGitExec                = "Git %s exec.Command err:%v"
+	errGitBranchWasNotExisted = "the branch name `%s` of the git is not existed"
+	errSvnTagWasNull          = "the svnTag of the branch name `%s` was null"
+	errWriteToChannelTimeout  = "the command `%v` writes to channel time out"
 
-type Git struct {
+	execOutputTemplate = "Git Command `%s` output:\n%s\n"
+)
+
+const (
+	remoteBranchPrefix = "remotes/origin/"
+)
+
+const (
+	gitScriptName = "git.sh"
+
+	cmdGitCheckOut = "checkout"
+	cmdGitFetchAll = "fetch"
+	cmdGitShowAll  = "showAll"
+	cmdGitGenerate = "generate"
+	cmdGitCommit   = "commit"
+	cmdGitPush     = "push"
+	cmdGitUpdate   = "update"
+	cmdSvnSync     = "svnSync"
+)
+
+const (
+	gitInActive = iota
+	gitActive
+)
+
+type git struct {
 	mu             sync.RWMutex
-	ScriptPath     string         `json:"script_path"`
-	Path           string         `json:"path"`
-	Name           string         `json:"name"`
-	ActiveBranch   string         `json:"active_branch"`
-	LocalBranches  map[string]int `json:"local_branches"`
-	RemoteBranches map[string]int `json:"remote_branches"`
-	ListBranches   []string       `json:"list_branches"`
-	TaskCount      int32          `json:"task_count"`
+	ScriptPath     string             `json:"script_path"`
+	Path           string             `json:"path"`
+	Name           string             `json:"name"`
+	RemoteBranches map[string]*Branch `json:"remote_branches"`
+	ListBranches   []string           `json:"list_branches"`
+	TaskCount      int32              `json:"task_count"`
 	TaskChan       chan *Command
 	CurrentTask    *Command
 	ctx            context.Context
 }
 
-func (g *Git) FetchAll() (err error) {
+func (g *git) GetBranchFullName(name string) string {
+	return fmt.Sprintf("%s%s", remoteBranchPrefix, name)
+}
+
+func (g *git) GetBranchShortName(name string) string {
+	return strings.Replace(name, remoteBranchPrefix, "", -1)
+}
+
+func (g *git) ExecuteWithArgs(args ...string) (res []byte, err error) {
+	t := append([]string{g.ScriptPath, g.Path}, args...)
+	out, err := exec.Command("sh", t...).Output()
+	if err != nil {
+		return out, errors.New(fmt.Sprintf(errGitExec, args[0], err))
+	}
+	log.Printf(execOutputTemplate, args[0], string(out))
+	return out, nil
+}
+
+func (g *git) FetchAll() (err error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "fetch").Output(); err != nil {
-		return errors.New(fmt.Sprintf("FetchAll exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		log.Println("out:", string(out))
+	_, err = g.ExecuteWithArgs(cmdGitFetchAll)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (g *Git) ShowAll(lock bool) (err error) {
+func (g *git) ShowAll(lock bool) (err error) {
 	if lock == true {
 		g.mu.Lock()
 		defer g.mu.Unlock()
 	}
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "all").Output(); err != nil {
-		return errors.New(fmt.Sprintf("ShowAll exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		arr := strings.Split(string(out), "\n")
-		if len(arr) > 0 {
-			g.ActiveBranch = ""
-			g.LocalBranches = make(map[string]int, 0)
-			g.RemoteBranches = make(map[string]int, 0)
-			g.ListBranches = make([]string, 0)
-		} else {
-			return errors.New(fmt.Sprintf("ShowAll exec.Command name:%s len 0 out:%v\n", g.Name, out))
+	out, err := g.ExecuteWithArgs(cmdGitShowAll)
+	if err != nil {
+		return err
+	}
+	arr := strings.Split(string(out), "\n")
+	if len(arr) == 0 {
+		return errors.New(fmt.Sprintf("ShowAll len == 0 name:%s out:%v\n", g.Name, out))
+	}
+	tmp := make(map[string]*Branch, 0)
+	g.ListBranches = make([]string, 0)
+	var activeBranch string
+	for _, v := range arr {
+		if v == "" {
+			continue
 		}
-		for _, v := range arr {
-			if v == "" {
+		v = strings.Replace(v, " ", "", -1)
+		s := strings.Replace(v, "*", "", -1)
+		activeMatched, err := regexp.Match(`\*`, []byte(v))
+		if err != nil {
+			return errors.New(fmt.Sprintf("ShowAll regexp.Match active name:%s err:%v\n", g.Name, err))
+		}
+		if activeMatched == true {
+			activeBranch = s
+		}
+		if matched, err := regexp.Match(`remotes`, []byte(v)); err != nil {
+			return errors.New(fmt.Sprintf("ShowAll regexp.Match local/remote name:%s err:%v\n", g.Name, err))
+		} else {
+			if matched == false {
 				continue
 			}
-			v = strings.Replace(v, " ", "", -1)
-			s := strings.Replace(v, "*", "", -1)
-			if matched, err := regexp.Match(`\*`, []byte(v)); err != nil {
-				return errors.New(fmt.Sprintf("ShowAll regexp.Match active name:%s err:%v\n", g.Name, err))
-			} else {
-				if matched == true {
-					g.ActiveBranch = s
+			s = g.GetBranchShortName(s)
+			if t, ok := g.RemoteBranches[s]; ok {
+				if s == activeBranch {
+					t.Active = gitActive
 				}
-			}
-			if matched, err := regexp.Match(`remotes`, []byte(v)); err != nil {
-				return errors.New(fmt.Sprintf("ShowAll regexp.Match local/remote name:%s err:%v\n", g.Name, err))
+				tmp[s] = t
 			} else {
-				if matched == true {
-					g.RemoteBranches[s] = 1
-					s = strings.Replace(s, "remotes/origin/", "", -1)
-					g.ListBranches = append(g.ListBranches, s)
-				} else {
-					g.LocalBranches[s] = 1
+				b := &Branch{
+					Name:   s,
+					Active: gitInActive,
+					SvnTag: "",
 				}
+				if s == activeBranch {
+					b.Active = gitActive
+				}
+				tmp[s] = b
 			}
+			g.ListBranches = append(g.ListBranches, s)
 		}
 	}
+	g.RemoteBranches = tmp
 	return nil
 }
 
-func (g *Git) ShowActive() {
-	log.Printf("%s active:%s\n", g.Name, g.ActiveBranch)
-}
-
-func (g *Git) CheckOutBranch(name string) (err error) {
-	fullName := fmt.Sprintf("remotes/origin/%s", name)
-	if _, ok := g.RemoteBranches[fullName]; ok {
-		if out, err := exec.Command("sh", g.ScriptPath, g.Path, "checkout", name, fullName).Output(); err != nil {
-			return errors.New(fmt.Sprintf("CheckOutBranch exec.Command name:%s err:%v\n", g.Name, err))
-		} else {
-			log.Println("out:", string(out))
-		}
-	} else {
-		return errors.New(fmt.Sprintf("CheckOutBranch exec.Command name:%s to:`%s` wasn't exist\n", g.Name, name))
+func (g *git) CheckOutBranch(name string) (err error) {
+	_, ok := g.RemoteBranches[name]
+	if !ok {
+		return errors.New(fmt.Sprintf(errGitBranchWasNotExisted, name))
+	}
+	_, err = g.ExecuteWithArgs(cmdGitCheckOut, name, g.GetBranchFullName(name))
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (g *Git) Generator(name string) (err error) {
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "generator", name).Output(); err != nil {
-		return errors.New(fmt.Sprintf("Generator exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		log.Println("out:", string(out))
+func (g *git) Generate(name string) (err error) {
+	_, err = g.ExecuteWithArgs(cmdGitGenerate, name)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (g *Git) Commit(name string) (err error) {
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "commit", name).Output(); err != nil {
-		return errors.New(fmt.Sprintf("Commit exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		log.Println("out:", string(out))
+func (g *git) Commit(name string) (err error) {
+	_, err = g.ExecuteWithArgs(cmdGitCommit, name)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (g *Git) Push(name string) (err error) {
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "push", name).Output(); err != nil {
-		return errors.New(fmt.Sprintf("Push exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		log.Println("out:", string(out))
+func (g *git) Push(name string) (err error) {
+	_, err = g.ExecuteWithArgs(cmdGitPush, name)
+	if err != nil {
+		return err
 	}
 	return nil
 }
 
-func (g *Git) Update(name string) (err error) {
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "update", name).Output(); err != nil {
-		return errors.New(fmt.Sprintf("Update exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		log.Println("out:", string(out))
-	}
-	return nil
-}
-
-func (g *Git) SvnSync(name string) (err error) {
-	if out, err := exec.Command("sh", g.ScriptPath, g.Path, "svnSync", name, "svntag").Output(); err != nil {
-		return errors.New(fmt.Sprintf("svnSync exec.Command name:%s err:%v\n", g.Name, err))
-	} else {
-		log.Println("out:", string(out))
-	}
-	return nil
-}
-
-func (g *Git) ChangeTaskCount(incr int32) {
-	atomic.AddInt32(&g.TaskCount, incr)
-}
-
-func (g *Git) Common(name string) (err error) {
-	if err = g.ShowAll(true); err != nil {
+func (g *git) Common(name string) (err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if err = g.ShowAll(false); err != nil {
 		return err
 	}
 	if err = g.CheckOutBranch(name); err != nil {
 		return err
 	}
-	if err = g.Generator(name); err != nil {
+	if err = g.Generate(name); err != nil {
 		return err
 	}
 	if err = g.Commit(name); err != nil {
@@ -194,9 +221,50 @@ func (g *Git) Common(name string) (err error) {
 	return nil
 }
 
-func (g *Git) LoopChan() {
+func (g *git) Update(name string) (err error) {
+	_, err = g.ExecuteWithArgs(cmdGitUpdate, name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *git) SetSvnTag(name, tag string) (err error) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	t, ok := g.RemoteBranches[name]
+	if !ok {
+		return errors.New(fmt.Sprintf(errGitBranchWasNotExisted, name))
+	}
+	t.SvnTag = tag
+	return nil
+}
+
+func (g *git) SvnSync(name string) (err error) {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	t, ok := g.RemoteBranches[name]
+	if !ok {
+		return errors.New(fmt.Sprintf(errGitBranchWasNotExisted, name))
+	}
+	if t.SvnTag == "" {
+		return errors.New(fmt.Sprintf(errSvnTagWasNull, name))
+	}
+	_, err = g.ExecuteWithArgs(cmdSvnSync, name, t.SvnTag)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *git) ChangeTaskCount(incr int32) {
+	atomic.AddInt32(&g.TaskCount, incr)
+}
+
+
+func (g *git) LoopChan() {
 	defer close(g.TaskChan)
-	tick := time.NewTicker(time.Second * 30)
+	tick := time.NewTicker(time.Second * 10)
 	defer tick.Stop()
 	for {
 		select {
@@ -217,12 +285,15 @@ func (g *Git) LoopChan() {
 				if err := g.FetchAll(); err != nil {
 					log.Println("LoopChan FetchAll err:", err)
 				}
+				if err := g.ShowAll(true); err != nil {
+					log.Println("LoopChan show err:", err)
+				}
 			}()
 		}
 	}
 }
 
-func (g *Git) GetCurrentTask() string {
+func (g *git) GetCurrentTask() string {
 	if g.CurrentTask == nil {
 		return "N/A"
 	} else {
@@ -230,14 +301,44 @@ func (g *Git) GetCurrentTask() string {
 	}
 }
 
+func (g *git) HandleCommand(c *Command) (err error) {
+	g.ChangeTaskCount(1)
+	tick := time.NewTicker(time.Second * 1)
+	defer tick.Stop()
+	for {
+		select {
+		case <-tick.C:
+			g.ChangeTaskCount(-1)
+			return errors.New(fmt.Sprintf(errWriteToChannelTimeout, c))
+		case g.TaskChan <- c:
+			return nil
+		}
+	}
+}
+
+func (g *git) GetGitInfo() GitInfo {
+	g.mu.RLock()
+	defer g.mu.RUnlock()
+	gi := GitInfo{
+		Name:         g.Name,
+		ListBranches: make([]Branch, 0),
+		TaskCount:    g.TaskCount,
+		CurrentTask:  g.GetCurrentTask(),
+	}
+	for _, v := range g.ListBranches {
+		if t, ok := g.RemoteBranches[v]; ok {
+			gi.ListBranches = append(gi.ListBranches, *t)
+		}
+	}
+	return gi
+}
+
 func NewGitOperator(v *ProjectConfig, ctx context.Context) GitOperator {
-	var git GitOperator = &Git{
-		ScriptPath:     fmt.Sprintf("%s%s", v.ScriptsPath, "git.sh"),
+	var git GitOperator = &git{
+		ScriptPath:     fmt.Sprintf("%s%s", v.ScriptsPath, gitScriptName),
 		Path:           v.Git.WorkDir,
 		Name:           v.ProjectName,
-		ActiveBranch:   "",
-		LocalBranches:  make(map[string]int, 0),
-		RemoteBranches: make(map[string]int, 0),
+		RemoteBranches: make(map[string]*Branch, 0),
 		ListBranches:   make([]string, 0),
 		TaskCount:      0,
 		TaskChan:       make(chan *Command, 1024),
@@ -245,71 +346,4 @@ func NewGitOperator(v *ProjectConfig, ctx context.Context) GitOperator {
 	}
 	go git.LoopChan()
 	return git
-}
-
-func NewGitHub(c *conf.Config, ctx context.Context) *GitHub {
-	g := &GitHub{
-		Gits: make(map[string]*Git, 0),
-	}
-	for _, v := range c.Projects {
-		git := &Git{
-			ScriptPath:     fmt.Sprintf("%s%s", v.ScriptsPath, "git.sh"),
-			Path:           v.Git.WorkDir,
-			Name:           v.ProjectName,
-			ActiveBranch:   "",
-			LocalBranches:  make(map[string]int, 0),
-			RemoteBranches: make(map[string]int, 0),
-			ListBranches:   make([]string, 0),
-			TaskCount:      0,
-			TaskChan:       make(chan *Command, 1024),
-			ctx:            ctx,
-		}
-		g.Gits[git.Name] = git
-		go git.LoopChan()
-	}
-	return g
-}
-
-func (gh *GitHub) handleAll() (res string, err error) {
-	t := make([]GitResponse, 0)
-	for _, v := range gh.Gits {
-		if err = v.ShowAll(true); err != nil {
-			return "", nil
-		}
-		tmp := GitResponse{
-			Name:         v.Name,
-			ActiveBranch: v.ActiveBranch,
-			ListBranches: v.ListBranches,
-			TaskCount:    v.TaskCount,
-			CurrentTask:  v.GetCurrentTask(),
-		}
-		log.Println("CurrentTask:", tmp.CurrentTask)
-		t = append(t, tmp)
-	}
-	if ret, err := json.Marshal(t); err != nil {
-		return "", err
-	} else {
-		return string(ret), nil
-	}
-}
-
-func (gh *GitHub) handleCommand(c *Command) (err error) {
-	if t, ok := gh.Gits[c.projectName]; ok {
-		t.ChangeTaskCount(1)
-		tick := time.NewTicker(time.Second * 1)
-		defer tick.Stop()
-		for {
-			select {
-			case <-tick.C:
-				t.ChangeTaskCount(-1)
-				log.Println("write chan timeout cmd:", c)
-				return
-			case t.TaskChan <- c:
-				return
-			}
-		}
-	} else {
-		log.Printf("no project:%v\n", c)
-	}
-	return nil
 }

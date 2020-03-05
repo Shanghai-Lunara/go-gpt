@@ -15,6 +15,7 @@ import (
 type SvnOperator interface {
 	Lock()
 	Unlock()
+	ExecuteWithArgs(args ...string) (res []byte, err error)
 	CheckOut() error
 	Update() error
 	Status() error
@@ -22,7 +23,6 @@ type SvnOperator interface {
 	Clean() error
 	Commit(svnMessage string) error
 	Log(number int) (res []Logentry, err error)
-	ExecuteWithArgs(args ...string) (res []byte, err error)
 	Timer()
 	Listener(ch chan *Command)
 }
@@ -30,7 +30,7 @@ type SvnOperator interface {
 const svnUrl = "svn://%s@%s:%d/%s"
 
 const (
-	scriptName = "svn.sh"
+	svnScriptName = "svn.sh"
 
 	cmdCheckOut = "checkout"
 	cmdUpdate   = "update"
@@ -65,6 +65,16 @@ func (s *svn) Lock() {
 
 func (s *svn) Unlock() {
 	s.mu.Unlock()
+}
+
+func (s *svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
+	t := append([]string{s.ScriptPath, s.Username, s.Password, s.WorkDir, s.RemoteDir}, args...)
+	out, err := exec.Command("sh", t...).Output()
+	if err != nil {
+		return out, errors.New(fmt.Sprintf("Svn %s exec.Command err:%v\n", args[0], err))
+	}
+	log.Printf("Svn Command `%s` output:\n%s\n", args[0], string(out))
+	return out, nil
 }
 
 func (s *svn) CheckOut() error {
@@ -160,16 +170,6 @@ func (s *svn) Log(number int) (res []Logentry, err error) {
 	return rest.Logentrys, nil
 }
 
-func (s *svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
-	t := append([]string{s.ScriptPath, s.Username, s.Password, s.WorkDir, s.RemoteDir}, args...)
-	out, err := exec.Command("sh", t...).Output()
-	if err != nil {
-		return out, errors.New(fmt.Sprintf("Svn %s exec.Command err:%v\n", args[0], err))
-	}
-	log.Printf("Svn Command `%s` output:\n%s\n", args[0], string(out))
-	return out, nil
-}
-
 func (s *svn) Timer() {
 	tick := time.NewTicker(time.Second * 10)
 	defer tick.Stop()
@@ -205,7 +205,7 @@ func (s *svn) Listener(ch chan *Command) {
 
 func NewSvnOperator(v *ProjectConfig, ctx context.Context) SvnOperator {
 	var svn SvnOperator = &svn{
-		ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, scriptName),
+		ScriptPath:  fmt.Sprintf("%s%s", v.ScriptsPath, svnScriptName),
 		ProjectName: v.ProjectName,
 		Username:    v.Svn.Username,
 		Password:    v.Svn.Password,
@@ -222,5 +222,6 @@ func NewSvnOperator(v *ProjectConfig, ctx context.Context) SvnOperator {
 	if err := svn.Update(); err != nil {
 		log.Println(err)
 	}
+	go svn.Timer()
 	return svn
 }

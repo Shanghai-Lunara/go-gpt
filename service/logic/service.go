@@ -27,7 +27,7 @@ func NewService(c *conf.Config) *Service {
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
 		C:       c,
-		Project: operator.NewProject(c, ctx),
+		Project: operator.NewProject(c.Projects, ctx),
 		ctx:     ctx,
 		Output:  file,
 		cancel:  cancel,
