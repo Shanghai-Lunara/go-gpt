@@ -2,16 +2,16 @@ package logic
 
 import (
 	"context"
-	"log"
 	"os"
 
 	"github.com/Shanghai-Lunara/go-gpt/conf"
 	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+	"k8s.io/klog"
 )
 
 type Service struct {
 	C           *conf.Config
-	Project     *operator.Project
+	Project     operator.Project
 	HttpService *HttpService
 	Output      *os.File
 	ctx         context.Context
@@ -21,9 +21,9 @@ type Service struct {
 func NewService(c *conf.Config) *Service {
 	file, err := os.OpenFile(c.LogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
-		log.Panic("OpenFile err: ", err)
+		panic(err)
 	}
-	log.SetOutput(file)
+	klog.SetOutput(file)
 	ctx, cancel := context.WithCancel(context.Background())
 	s := &Service{
 		C:       c,
@@ -40,6 +40,6 @@ func (s *Service) Close() {
 	s.HttpService.ShutDown()
 	s.cancel()
 	if err := s.Output.Close(); err != nil {
-		log.Println("log file close err:", err)
+		klog.V(2).Infof("log file close err:", err)
 	}
 }

@@ -1,0 +1,192 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "The purpose of this service is to provide an application\nthat is using plain go code to define an API",
+    "title": "API.",
+    "version": "0.0.1"
+  },
+  "host": "localhost",
+  "paths": {
+    "/git/all": {
+      "get": {
+        "description": "This will return all gits' info",
+        "tags": [
+          "git"
+        ],
+        "summary": "get all gits' info",
+        "operationId": "all",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/GitAllResponse"
+          }
+        }
+      }
+    },
+    "/git/gen/{projectName}/{branchName}": {
+      "get": {
+        "description": "generate and commit",
+        "tags": [
+          "git",
+          "gen"
+        ],
+        "summary": "It would generate code and commit to git with specific projectName and branchName",
+        "operationId": "genSpecificGit",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/CommonResponse"
+          }
+        }
+      }
+    },
+    "/git/set/{projectName}/{branchName}/{svnTag}": {
+      "get": {
+        "description": "set",
+        "tags": [
+          "git",
+          "set"
+        ],
+        "summary": "It would set a git branch with the specific tag",
+        "operationId": "SetParam",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "BranchName",
+            "description": "BranchName",
+            "name": "branch_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "SvnTag",
+            "description": "SvnTag",
+            "name": "svn_tag",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/CommonResponse"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Branch": {
+      "type": "object",
+      "properties": {
+        "active": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Active"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "svn_tag": {
+          "type": "string",
+          "x-go-name": "SvnTag"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
+    "GitInfo": {
+      "type": "object",
+      "properties": {
+        "current_task": {
+          "type": "string",
+          "x-go-name": "CurrentTask"
+        },
+        "list_branches": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Branch"
+          },
+          "x-go-name": "ListBranches"
+        },
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "task_count": {
+          "type": "integer",
+          "format": "int32",
+          "x-go-name": "TaskCount"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    }
+  },
+  "responses": {
+    "CommonResponse": {
+      "description": "CommonResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          }
+        }
+      }
+    },
+    "GitAllResponse": {
+      "description": "GitAllResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "gits"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "gits": {
+            "description": "The set of all gits",
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/definitions/GitInfo"
+            },
+            "x-go-name": "Gits"
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          }
+        }
+      }
+    }
+  }
+}

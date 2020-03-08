@@ -5,11 +5,12 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"log"
 	"os/exec"
 	"strconv"
 	"sync"
 	"time"
+
+	"k8s.io/klog"
 )
 
 type SvnOperator interface {
@@ -73,7 +74,7 @@ func (s *svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
 	if err != nil {
 		return out, errors.New(fmt.Sprintf("Svn %s exec.Command err:%v\n", args[0], err))
 	}
-	log.Printf("Svn Command `%s` output:\n%s\n", args[0], string(out))
+	klog.Infof("Svn Command `%s` output:\n%s\n", args[0], string(out))
 	return out, nil
 }
 
@@ -179,7 +180,7 @@ func (s *svn) Timer() {
 			return
 		case <-tick.C:
 			if err := s.Update(); err != nil {
-				log.Println(err)
+				klog.V(2).Info(err)
 			}
 		}
 	}
@@ -193,9 +194,9 @@ func (s *svn) Listener(ch chan *Command) {
 			if !isClose {
 				return
 			}
-			log.Println("cmd:", *c)
+			klog.Infof("cmd:", *c)
 			if _, err := s.ExecuteWithArgs(c.command, c.message); err != nil {
-				log.Println("Listener exc err:", err)
+				klog.V(2).Infof("Listener exc err:", err)
 			}
 		case <-s.ctx.Done():
 			return
@@ -217,10 +218,10 @@ func NewSvnOperator(v *ProjectConfig, ctx context.Context) SvnOperator {
 		ctx:         ctx,
 	}
 	if err := svn.CheckOut(); err != nil {
-		log.Println(err)
+		klog.V(2).Info(err)
 	}
 	if err := svn.Update(); err != nil {
-		log.Println(err)
+		klog.V(2).Info(err)
 	}
 	go svn.Timer()
 	return svn

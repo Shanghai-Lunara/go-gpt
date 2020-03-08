@@ -10,7 +10,9 @@ type Project interface {
 	Add(projectName string, p *project)
 	GetProject(projectName string) (p *project, err error)
 	GetGitInfo(projectName string) (gi GitInfo, err error)
+	GetAllGitInfo() (res map[string]GitInfo, err error)
 	GitGenerate(projectName, branchName string) error
+	SetGitBranchSvnTag(projectName, branchName, svnTag string) error
 	SvnCommit(projectName, branchName, svnMessage string) error
 	SvnLog(projectName string, number int) (res []Logentry, err error)
 }
@@ -51,6 +53,19 @@ func (ph *projects) GetGitInfo(projectName string) (gi GitInfo, err error) {
 	return p.Git.GetGitInfo(), nil
 }
 
+func (ph *projects) GetAllGitInfo() (res map[string]GitInfo, err error) {
+	res = make(map[string]GitInfo, 0)
+	for k, v := range ph.projects {
+		_ = v
+		if gi, err := ph.GetGitInfo(k); err != nil {
+			return res, err
+		} else {
+			res[k] = gi
+		}
+	}
+	return res, nil
+}
+
 func (ph *projects) GitGenerate(projectName, branchName string) error {
 	p, err := ph.GetProject(projectName)
 	if err != nil {
@@ -63,6 +78,14 @@ func (ph *projects) GitGenerate(projectName, branchName string) error {
 		message:     "",
 	}
 	return p.Git.HandleCommand(c)
+}
+
+func (ph *projects) SetGitBranchSvnTag(projectName, branchName, svnTag string) error {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return err
+	}
+	return p.Git.SetSvnTag(branchName, svnTag)
 }
 
 func (ph *projects) SvnCommit(projectName, branchName, svnMessage string) error {
@@ -86,7 +109,7 @@ func (ph *projects) SvnLog(projectName string, number int) (res []Logentry, err 
 	return p.Svn.Log(number)
 }
 
-func NewProject(conf []ProjectConfig, ctx context.Context) *Project {
+func NewProject(conf []ProjectConfig, ctx context.Context) Project {
 	var ph Project = &projects{
 		projects: make(map[string]*project, 0),
 	}
@@ -97,5 +120,5 @@ func NewProject(conf []ProjectConfig, ctx context.Context) *Project {
 		}
 		ph.Add(v.ProjectName, p)
 	}
-	return &ph
+	return ph
 }

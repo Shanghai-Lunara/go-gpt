@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
 	"os/exec"
 	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"k8s.io/klog"
 )
 
 type GitOperator interface {
@@ -92,7 +93,7 @@ func (g *git) ExecuteWithArgs(args ...string) (res []byte, err error) {
 	if err != nil {
 		return out, errors.New(fmt.Sprintf(errGitExec, args[0], err))
 	}
-	log.Printf(execOutputTemplate, args[0], string(out))
+	klog.Infof(execOutputTemplate, args[0], string(out))
 	return out, nil
 }
 
@@ -274,20 +275,20 @@ func (g *git) LoopChan() {
 		case c := <-g.TaskChan:
 			g.CurrentTask = c
 			if err := g.Common(c.branchName); err != nil {
-				log.Printf("LoopChan Common err:%v\n", err)
+				klog.V(2).Infof("LoopChan Common err:%v", err)
 			}
 			if err := g.Update(c.branchName); err != nil {
-				log.Printf("LoopChan Update err:%v\n", err)
+				klog.V(2).Infof("LoopChan Update err:%v", err)
 			}
 			g.ChangeTaskCount(-1)
 			g.CurrentTask = nil
 		case <-tick.C:
 			go func() {
 				if err := g.FetchAll(); err != nil {
-					log.Println("LoopChan FetchAll err:", err)
+					klog.V(2).Infof("LoopChan FetchAll err:%v", err)
 				}
 				if err := g.ShowAll(true); err != nil {
-					log.Println("LoopChan show err:", err)
+					klog.V(2).Infof("LoopChan show err:%v", err)
 				}
 			}()
 		}
