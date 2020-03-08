@@ -31,6 +31,24 @@
         ],
         "summary": "It would generate code and commit to git with specific projectName and branchName",
         "operationId": "genSpecificGit",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "BranchName",
+            "description": "BranchName",
+            "name": "branch_name",
+            "in": "path",
+            "required": true
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/CommonResponse"
@@ -79,6 +97,83 @@
           }
         }
       }
+    },
+    "/svn/commit/{projectName}/{branchName}/{svnMessage}": {
+      "get": {
+        "description": "scn commit",
+        "tags": [
+          "svn",
+          "commit"
+        ],
+        "summary": "It would sync project files from the specific git.branch and commit to svn server",
+        "operationId": "SetSvnTag",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "BranchName",
+            "description": "BranchName",
+            "name": "branch_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "SvnMessage",
+            "description": "SvnTag",
+            "name": "svn_message",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/CommonResponse"
+          }
+        }
+      }
+    },
+    "/svn/log/{projectName}/{logNumber}": {
+      "get": {
+        "description": "svn log",
+        "tags": [
+          "svn",
+          "log"
+        ],
+        "summary": "It would pull svn logs from the remote svn server with the specific number",
+        "operationId": "SvnLog",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "LogNumber",
+            "description": "LogNumber",
+            "name": "log_number",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/SvnLogResponse"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -123,6 +218,62 @@
           "type": "integer",
           "format": "int32",
           "x-go-name": "TaskCount"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
+    "Logentry": {
+      "type": "object",
+      "properties": {
+        "author": {
+          "type": "string",
+          "x-go-name": "Author"
+        },
+        "date_time": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "DateTime"
+        },
+        "msg": {
+          "type": "string",
+          "x-go-name": "Msg"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Path"
+          },
+          "x-go-name": "Paths"
+        },
+        "revision": {
+          "type": "string",
+          "x-go-name": "Revision"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
+    "Path": {
+      "type": "object",
+      "properties": {
+        "action": {
+          "type": "string",
+          "x-go-name": "Action"
+        },
+        "kind": {
+          "type": "string",
+          "x-go-name": "Kind"
+        },
+        "prop_mods": {
+          "type": "string",
+          "x-go-name": "PropMods"
+        },
+        "text_mods": {
+          "type": "string",
+          "x-go-name": "TextMods"
+        },
+        "value": {
+          "type": "string",
+          "x-go-name": "Value"
         }
       },
       "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
@@ -178,6 +329,40 @@
               "$ref": "#/definitions/GitInfo"
             },
             "x-go-name": "Gits"
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          }
+        }
+      }
+    },
+    "SvnLogResponse": {
+      "description": "SvnLogResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "logentrys"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "logentrys": {
+            "description": "The set of svn logs",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Logentry"
+            },
+            "x-go-name": "Logentrys"
           },
           "message": {
             "description": "The BaseResponse message",

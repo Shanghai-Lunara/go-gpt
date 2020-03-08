@@ -10,19 +10,16 @@
 package logic
 
 import (
-	"net/http"
-
 	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
-	"github.com/gin-gonic/gin"
 	"k8s.io/klog"
 )
 
 type Router interface {
-	GetGitAll(c *gin.Context)
-	GitGenerate(c *gin.Context)
-	SetGitBranchSvnTag(projectName, branchName, svnTag string) (res Response, err error)
-	SvnCommit(projectName, branchName, svnMessage string) (res Response, err error)
-	SvnLog(projectName string) (res Response, err error)
+	GetGitAll() (res HttpResponse, err error)
+	GitGenerate(param *GitGenerateParam) (res HttpResponse, err error)
+	SetGitBranchSvnTag(param *SetGitBranchSvnTagParam) (res HttpResponse, err error)
+	SvnCommit(param *SvnCommitParam) (res HttpResponse, err error)
+	SvnLog(param *SvnLogParam) (res HttpResponse, err error)
 }
 
 const (
@@ -30,7 +27,7 @@ const (
 	RouteGitGenerate        = "/git/gen/:projectName/:branchName"
 	RouteSetGitBranchSvnTag = "/git/set/:projectName/:branchName/:svnTag"
 	RouteSvnCommit          = "/git/gen/:projectName/:branchName/:svnMsg"
-	RouteSvnLog             = "/git/log/:projectName"
+	RouteSvnLog             = "/git/log/:projectName/:logNumber"
 )
 
 type router struct {
@@ -89,12 +86,13 @@ type GitAllResponse struct {
 //
 //     Responses:
 //       200: GitAllResponse
-func (r *router) GetGitAll(c *gin.Context) {
-	res, err := r.project.GetAllGitInfo()
+func (r *router) GetGitAll() (res HttpResponse, err error) {
+	ret, err := r.project.GetAllGitInfo()
 	if err != nil {
-		klog.V(2).Info("GetGitAll err:", err)
+		klog.V(2).Infof("GetGitAll err:", err)
+		return res, err
 	}
-	c.JSON(http.StatusOK, GetQuickResponse(res))
+	return GetQuickResponse(ret), nil
 }
 
 // swagger:parameters genSpecificGit
@@ -119,16 +117,12 @@ type GitGenerateParam struct {
 //
 //     Responses:
 //       200: CommonResponse
-func (r *router) GitGenerate(c *gin.Context) {
-	gg := &GitGenerateParam {
-		ProjectName: c.Param("projectName"),
-		BranchName: c.Param("branchName"),
+func (r *router) GitGenerate(param *GitGenerateParam) (res HttpResponse, err error) {
+	if err := r.project.GitGenerate(param.ProjectName, param.BranchName); err != nil {
+		klog.V(2).Infof("GitGenerate cmd:%v err:%v", *param, err)
+		return res, err
 	}
-	klog.V(2).Info("gg:", gg)
-	if err := r.project.GitGenerate(gg.ProjectName, gg.BranchName); err != nil {
-		klog.V(2).Info("GitGenerate err:", err)
-	}
-	c.JSON(http.StatusOK, GetQuickResponse(map[string]interface{}{}))
+	return GetQuickResponse(map[string]interface{}{}), nil
 }
 
 // swagger:parameters SetParam
@@ -158,16 +152,95 @@ type SetGitBranchSvnTagParam struct {
 //
 //     Responses:
 //       200: CommonResponse
-func (r *router) SetGitBranchSvnTag(projectName, branchName, svnTag string) (res Response, err error) {
-	return res, nil
+func (r *router) SetGitBranchSvnTag(param *SetGitBranchSvnTagParam) (res HttpResponse, err error) {
+	err = r.project.SetGitBranchSvnTag(param.ProjectName, param.BranchName, param.SvnTag)
+	if err != nil {
+		klog.V(2).Infof("SetGitBranchSvnTag cmd:%v err:%v", *param, err)
+		return res, err
+	}
+	return GetQuickResponse(map[string]interface{}{}), nil
 }
 
-func (r *router) SvnCommit(projectName, branchName, svnMessage string) (res Response, err error) {
-	return res, nil
+// swagger:parameters SetSvnTag
+type SvnCommitParam struct {
+	// ProjectName
+	//
+	// Required: true
+	// in: path
+	ProjectName string `json:"project_name"`
+	// BranchName
+	//
+	// Required: true
+	// in: path
+	BranchName string `json:"branch_name"`
+	// SvnTag
+	//
+	// Required: true
+	// in: path
+	SvnMessage string `json:"svn_message"`
 }
 
-func (r *router) SvnLog(projectName string) (res Response, err error) {
-	return res, nil
+// swagger:route GET /svn/commit/{projectName}/{branchName}/{svnMessage} svn commit SetSvnTag
+//
+// It would sync project files from the specific git.branch and commit to svn server
+//
+// scn commit
+//
+//     Responses:
+//       200: CommonResponse
+func (r *router) SvnCommit(param *SvnCommitParam) (res HttpResponse, err error) {
+	err = r.project.SvnCommit(param.ProjectName, param.BranchName, param.SvnMessage)
+	if err != nil {
+		klog.V(2).Infof("SvnCommit cmd:%v err:%v", *param, err)
+		return res, err
+	}
+	return GetQuickResponse(map[string]interface{}{}), nil
+}
+
+// swagger:parameters SvnLog
+type SvnLogParam struct {
+	// ProjectName
+	//
+	// Required: true
+	// in: path
+	ProjectName string `json:"project_name"`
+	// LogNumber
+	//
+	// Required: true
+	// in: path
+	LogNumber int `json:"log_number"`
+}
+
+// SvnLogResponse
+// swagger:response SvnLogResponse
+type SvnLogResponse struct {
+	// The svn logs
+	// in: body
+	Body struct {
+		SwaggerResponse
+		// The set of svn logs
+		//
+		// Required: true
+		// An optional field name to which this validation applies
+		Logentrys []operator.Logentry `json:"logentrys"`
+	}
+}
+
+// swagger:route GET /svn/log/{projectName}/{logNumber} svn log SvnLog
+//
+// It would pull svn logs from the remote svn server with the specific number
+//
+// svn log
+//
+//     Responses:
+//       200: SvnLogResponse
+func (r *router) SvnLog(param *SvnLogParam) (res HttpResponse, err error) {
+	ret, err := r.project.SvnLog(param.ProjectName, param.LogNumber)
+	if err != nil {
+		klog.V(2).Infof("SvnLog cmd:%v err:%v", *param, err)
+		return res, err
+	}
+	return GetQuickResponse(ret), nil
 }
 
 func NewRouter(p operator.Project) Router {

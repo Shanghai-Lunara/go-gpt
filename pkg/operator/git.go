@@ -263,7 +263,6 @@ func (g *git) ChangeTaskCount(incr int32) {
 	atomic.AddInt32(&g.TaskCount, incr)
 }
 
-
 func (g *git) LoopChan() {
 	defer close(g.TaskChan)
 	tick := time.NewTicker(time.Second * 10)

@@ -1,7 +1,8 @@
 package logic
 
 const (
-	CodeSuccess = iota
+	CodeSuccess = 10000 + iota
+	CodeUnknownError
 )
 
 type HttpRequest struct {
@@ -15,17 +16,25 @@ type HttpResponse struct {
 
 func GetResponse(code int, msg string, data interface{}) HttpResponse {
 	return HttpResponse{
-		Code: code,
+		Code:    code,
 		Message: msg,
-		Data: data,
+		Data:    data,
 	}
 }
 
 func GetQuickResponse(data interface{}) HttpResponse {
 	return HttpResponse{
-		Code: CodeSuccess,
-		Message: "",
-		Data: data,
+		Code:    CodeSuccess,
+		Message: "success",
+		Data:    data,
+	}
+}
+
+func GetQuickErrorResponse(code int) HttpResponse {
+	return HttpResponse{
+		Code:    code,
+		Message: "unknown error ",
+		Data:    map[string]interface{}{},
 	}
 }
 
