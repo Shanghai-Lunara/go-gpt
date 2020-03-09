@@ -74,10 +74,10 @@ func (ph *projects) GitGenerate(projectName, branchName string) error {
 	c := &Command{
 		projectName: projectName,
 		branchName:  branchName,
-		command:     "",
+		command:     cmdGitGenerate,
 		message:     "",
 	}
-	return p.Git.HandleCommand(c)
+	return p.Git.SendCommand(c)
 }
 
 func (ph *projects) SetGitBranchSvnTag(projectName, branchName, svnTag string) error {

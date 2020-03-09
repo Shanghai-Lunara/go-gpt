@@ -31,6 +31,7 @@ type GitOperator interface {
 	ChangeTaskCount(incr int32)
 	LoopChan()
 	GetCurrentTask() string
+	SendCommand(c *Command) (err error)
 	HandleCommand(c *Command) error
 	GetGitInfo() GitInfo
 }
@@ -203,11 +204,11 @@ func (g *git) Push(name string) (err error) {
 }
 
 func (g *git) Common(name string) (err error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
-	if err = g.ShowAll(false); err != nil {
+	if err = g.ShowAll(true); err != nil {
 		return err
 	}
+	g.mu.RLock()
+	defer g.mu.RUnlock()
 	if err = g.CheckOutBranch(name); err != nil {
 		return err
 	}
@@ -273,23 +274,15 @@ func (g *git) LoopChan() {
 			return
 		case c := <-g.TaskChan:
 			g.CurrentTask = c
-			if err := g.Common(c.branchName); err != nil {
-				klog.V(2).Infof("LoopChan Common err:%v", err)
-			}
-			if err := g.Update(c.branchName); err != nil {
-				klog.V(2).Infof("LoopChan Update err:%v", err)
+			if err := g.HandleCommand(c); err != nil {
+				klog.V(2).Infof("LoopChan HandleCommand err:%v", err)
 			}
 			g.ChangeTaskCount(-1)
 			g.CurrentTask = nil
 		case <-tick.C:
-			go func() {
-				if err := g.FetchAll(); err != nil {
-					klog.V(2).Infof("LoopChan FetchAll err:%v", err)
-				}
-				if err := g.ShowAll(true); err != nil {
-					klog.V(2).Infof("LoopChan show err:%v", err)
-				}
-			}()
+			if err := g.SendCommand(&Command{command: cmdGitUpdate}); err != nil {
+				klog.V(2).Infof("LoopChan SendCommand err:%v", err)
+			}
 		}
 	}
 }
@@ -302,7 +295,7 @@ func (g *git) GetCurrentTask() string {
 	}
 }
 
-func (g *git) HandleCommand(c *Command) (err error) {
+func (g *git) SendCommand(c *Command) (err error) {
 	g.ChangeTaskCount(1)
 	tick := time.NewTicker(time.Second * 1)
 	defer tick.Stop()
@@ -315,6 +308,26 @@ func (g *git) HandleCommand(c *Command) (err error) {
 			return nil
 		}
 	}
+}
+
+func (g *git) HandleCommand(c *Command) (err error) {
+	switch c.command {
+	case cmdGitGenerate:
+		if err := g.Common(c.branchName); err != nil {
+			return err
+		}
+		if err := g.Update(c.branchName); err != nil {
+			return err
+		}
+	case cmdGitUpdate:
+		if err := g.FetchAll(); err != nil {
+			return err
+		}
+		if err := g.ShowAll(true); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (g *git) GetGitInfo() GitInfo {
