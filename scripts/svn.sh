@@ -9,7 +9,7 @@ function add() {
 }
 
 function addAll() {
-    svn --username $1 --password $2 status | grep ? | awk '{print $2}' | svn --username $1 --password $2 add
+    svn --username $1 --password $2 status | grep ? | awk '{print $2}' | xargs svn --username $1 --password $2 add
 }
 
 function status() {
@@ -35,7 +35,7 @@ function clean() {
 
 function commit() {
     addAll $1 $2
-    svn --username $1 --password $2 commit --message "${3}Committed by ${1}@go-gpt"
+    svn --username $1 --password $2 commit --message "${3} Committed by ${1}@go-gpt"
 }
 
 function update() {

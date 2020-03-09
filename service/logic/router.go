@@ -26,8 +26,8 @@ const (
 	RouteGetGitAll          = "/git/all"
 	RouteGitGenerate        = "/git/gen/:projectName/:branchName"
 	RouteSetGitBranchSvnTag = "/git/set/:projectName/:branchName/:svnTag"
-	RouteSvnCommit          = "/git/gen/:projectName/:branchName/:svnMsg"
-	RouteSvnLog             = "/git/log/:projectName/:logNumber"
+	RouteSvnCommit          = "/svn/commit/:projectName/:branchName/:svnMsg"
+	RouteSvnLog             = "/svn/log/:projectName/:logNumber"
 )
 
 type router struct {

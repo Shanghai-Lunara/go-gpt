@@ -253,7 +253,11 @@ func (g *git) SvnSync(name string) (err error) {
 	if t.SvnTag == "" {
 		return errors.New(fmt.Sprintf(errSvnTagWasNull, name))
 	}
-	_, err = g.ExecuteWithArgs(cmdSvnSync, name, t.SvnTag)
+	err = g.CheckOutBranch(name)
+	if err != nil {
+		return err
+	}
+	_, err = g.ExecuteWithArgs(cmdSvnSync, t.SvnTag)
 	if err != nil {
 		return err
 	}
@@ -359,5 +363,8 @@ func NewGitOperator(v *ProjectConfig, ctx context.Context) GitOperator {
 		ctx:            ctx,
 	}
 	go git.LoopChan()
+	if err := git.SendCommand(&Command{command: cmdGitUpdate}); err != nil {
+		klog.V(2).Infof("NewGitOperator SendCommand err:%v", err)
+	}
 	return git
 }
