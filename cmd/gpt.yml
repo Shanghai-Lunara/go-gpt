@@ -19,3 +19,9 @@ Projects:
       url: "192.168.1.1"
       port: 3690
       remote_dir: "projectName_dir"
+    ftp:
+      username: "admin"
+      password: "pwd123"
+      work_dir: "/dir/project/"
+      host: "192.168.1.2"
+      port: 22

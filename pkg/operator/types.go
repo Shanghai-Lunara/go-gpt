@@ -5,6 +5,7 @@ type ProjectConfig struct {
 	ScriptsPath string    `yaml:"scripts_path"`
 	Git         GitConfig `yaml:"git"`
 	Svn         SvnConfig `yaml:"svn"`
+	Ftp         FtpConfig `yaml:"ftp"`
 }
 
 // git types
@@ -34,4 +35,16 @@ type SvnConfig struct {
 	Url       string `yaml:"url"`
 	Port      int    `yaml:"port"`
 	RemoteDir string `yaml:"remote_dir"`
+}
+
+// ftp types
+type FtpConfig struct {
+	Username string `yaml:"username"`
+	Password string `yaml:"password"`
+
+	WorkDir string `yaml:"work_dir"`
+	Host    string `yaml:"host"`
+	Port    int    `yaml:"port"`
+
+	Timeout int `yaml:"timeout"`
 }

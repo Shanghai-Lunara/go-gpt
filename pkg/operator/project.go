@@ -24,6 +24,7 @@ const (
 type project struct {
 	Git GitOperator
 	Svn SvnOperator
+	Ftp FtpOperator
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -117,6 +118,7 @@ func NewProject(conf []ProjectConfig, ctx context.Context) Project {
 		p := &project{
 			Git: NewGitOperator(&v, ctx),
 			Svn: NewSvnOperator(&v, ctx),
+			Ftp: NewFtpOperator(v.Ftp),
 		}
 		ph.Add(v.ProjectName, p)
 	}

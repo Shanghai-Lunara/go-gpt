@@ -111,7 +111,7 @@ type GitGenerateParam struct {
 
 // swagger:route GET /git/gen/{projectName}/{branchName} git gen genSpecificGit
 //
-// It would generate code and commit to git with specific projectName and branchName
+// It would generate code and commit to git with the specific projectName and branchName
 //
 // generate and commit
 //
