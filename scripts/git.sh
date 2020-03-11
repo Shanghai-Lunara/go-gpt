@@ -10,6 +10,8 @@ function showAll() {
 }
 
 function changeBranch() {
+    git add --all
+    git checkout -f
     git reset --hard
     git checkout -B $1 --track $2
     exit 0
