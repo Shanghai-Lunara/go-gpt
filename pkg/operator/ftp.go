@@ -175,7 +175,7 @@ func GetVersionByFilter(source []Entry, specNamePrefix string) (version int) {
 		t := `introduce_([\d]{4})([\d]{4})([\d]{2}).txt`
 		re := regexp.MustCompile(t)
 		res := re.FindStringSubmatch(v.Name)
-		tmp, err := strconv.Atoi(res[3])
+		_, err = strconv.Atoi(res[3])
 		if err != nil {
 			klog.V(2).Info(err)
 			version = 0
@@ -194,5 +194,6 @@ func GetNextVersionString(version int) (str string) {
 }
 
 func GetTodayTimePrefix() string {
-	return ""
+	//t := time.Now().Format("20060102")
+	return time.Now().Format("20060102")
 }
