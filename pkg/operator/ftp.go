@@ -12,16 +12,16 @@ import (
 	"time"
 
 	goftp "github.com/jlaffaye/ftp"
-	jsoniter "github.com/json-iterator/go"
+	"github.com/json-iterator/go"
 	"k8s.io/klog"
 )
 
 type FtpOperator interface {
 	Conn() (c *goftp.ServerConn, err error)
 	Quit(c *goftp.ServerConn)
-	List() (res []Entry, err error)
+	List(filter string) (res []Entry, err error)
 	ReadFileContent(fileName string) (res []byte, err error)
-	SetFileContent(fileName string, content []byte) (err error)
+	WriteFileContent(fileName string, content []byte) (err error)
 	UploadFile(sourcePath, fileName string) (err error)
 }
 
@@ -64,7 +64,7 @@ func (f *ftp) Quit(c *goftp.ServerConn) {
 	}
 }
 
-func (f *ftp) List() (res []Entry, err error) {
+func (f *ftp) List(filter string) (res []Entry, err error) {
 	c, err := f.Conn()
 	if err != nil {
 		return res, err
@@ -76,6 +76,15 @@ func (f *ftp) List() (res []Entry, err error) {
 	}
 	res = make([]Entry, 0)
 	for _, v := range ret {
+		if filter != "" {
+			matched, err := regexp.Match(filter, []byte(v.Name))
+			if err != nil {
+				klog.V(2).Info(err)
+			}
+			if !matched {
+				continue
+			}
+		}
 		t := Entry{
 			Name:   v.Name,
 			Target: v.Target,
@@ -105,7 +114,7 @@ func (f *ftp) ReadFileContent(fileName string) (res []byte, err error) {
 	return res, nil
 }
 
-func (f *ftp) SetFileContent(fileName string, content []byte) (err error) {
+func (f *ftp) WriteFileContent(fileName string, content []byte) (err error) {
 	c, err := f.Conn()
 	if err != nil {
 		return err
@@ -145,7 +154,7 @@ func NewFtpOperator(c FtpConfig) FtpOperator {
 	} else {
 		klog.Info(string(res))
 	}
-	if res, err := f.List(); err != nil {
+	if res, err := f.List("20200226"); err != nil {
 		klog.Infof("List err:%v", err)
 	} else {
 		t, err := json.Marshal(res)
@@ -153,15 +162,16 @@ func NewFtpOperator(c FtpConfig) FtpOperator {
 			klog.Info(err)
 		}
 		klog.Info("t:", string(t))
-		GetVersionByFilter(res, "introduce")
+		v := GetTodayVersionByFilter(res, "introduce", "txt")
+		klog.Info("version:", v, " next-version:", GetNextVersionString(v))
 	}
-	if err := f.SetFileContent("abc.txt", []byte("test\nabc1213")); err != nil {
+	if err := f.WriteFileContent("abc.txt", []byte("test\nabc1213")); err != nil {
 		klog.Info(err)
 	}
 	return f
 }
 
-func GetVersionByFilter(source []Entry, specNamePrefix string) (version int) {
+func GetTodayVersionByFilter(source []Entry, specNamePrefix, specNameSuffix string) (version int) {
 	version = 0
 	for _, v := range source {
 		matched, err := regexp.Match(specNamePrefix, []byte(v.Name))
@@ -172,10 +182,12 @@ func GetVersionByFilter(source []Entry, specNamePrefix string) (version int) {
 		if matched == false {
 			continue
 		}
-		t := `introduce_([\d]{4})([\d]{4})([\d]{2}).txt`
-		re := regexp.MustCompile(t)
+		re := regexp.MustCompile(fmt.Sprintf(`%s_%s([\d]{2}).%s`, specNamePrefix, time.Now().Format("20060102"), specNameSuffix))
 		res := re.FindStringSubmatch(v.Name)
-		_, err = strconv.Atoi(res[3])
+		if len(res) < 2 {
+			continue
+		}
+		_, err = strconv.Atoi(res[1])
 		if err != nil {
 			klog.V(2).Info(err)
 			version = 0
@@ -191,9 +203,4 @@ func GetNextVersionString(version int) (str string) {
 		return strconv.Itoa(version)
 	}
 	return fmt.Sprintf("0%d", version)
-}
-
-func GetTodayTimePrefix() string {
-	//t := time.Now().Format("20060102")
-	return time.Now().Format("20060102")
 }

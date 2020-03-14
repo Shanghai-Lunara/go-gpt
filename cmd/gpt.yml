@@ -25,3 +25,4 @@ Projects:
       work_dir: "/dir/project/"
       host: "192.168.1.2"
       port: 22
+      timeout: 30

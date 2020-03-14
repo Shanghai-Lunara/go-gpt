@@ -11,10 +11,13 @@ type Project interface {
 	GetProject(projectName string) (p *project, err error)
 	GetGitInfo(projectName string) (gi GitInfo, err error)
 	GetAllGitInfo() (res map[string]GitInfo, err error)
-	GitGenerate(projectName, branchName string) error
-	SetGitBranchSvnTag(projectName, branchName, svnTag string) error
-	SvnCommit(projectName, branchName, svnMessage string) error
-	SvnLog(projectName string, number int) (res []Logentry, err error)
+	GitGenerate(projectName, branchName string) error // needed async
+	GitSetBranchSvnTag(projectName, branchName, svnTag string) error
+	SvnCommit(projectName, branchName, svnMessage string) error // needed async
+	SvnLog(projectName string, showNumber int) (res []Logentry, err error)
+	FtpLog(projectName, filter string) (res []Entry, err error)
+	FtpReadFile(projectName, fileName string) (res []byte, err error)
+	FtpWriteFile(projectName, fileName, content string) error
 }
 
 const (
@@ -22,9 +25,9 @@ const (
 )
 
 type project struct {
-	Git GitOperator
-	Svn SvnOperator
-	Ftp FtpOperator
+	git GitOperator
+	svn SvnOperator
+	ftp FtpOperator
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -51,7 +54,7 @@ func (ph *projects) GetGitInfo(projectName string) (gi GitInfo, err error) {
 	if err != nil {
 		return gi, err
 	}
-	return p.Git.GetGitInfo(), nil
+	return p.git.GetGitInfo(), nil
 }
 
 func (ph *projects) GetAllGitInfo() (res map[string]GitInfo, err error) {
@@ -78,15 +81,15 @@ func (ph *projects) GitGenerate(projectName, branchName string) error {
 		command:     cmdGitGenerate,
 		message:     "",
 	}
-	return p.Git.SendCommand(c)
+	return p.git.SendCommand(c)
 }
 
-func (ph *projects) SetGitBranchSvnTag(projectName, branchName, svnTag string) error {
+func (ph *projects) GitSetBranchSvnTag(projectName, branchName, svnTag string) error {
 	p, err := ph.GetProject(projectName)
 	if err != nil {
 		return err
 	}
-	return p.Git.SetSvnTag(branchName, svnTag)
+	return p.git.SetSvnTag(branchName, svnTag)
 }
 
 func (ph *projects) SvnCommit(projectName, branchName, svnMessage string) error {
@@ -94,20 +97,44 @@ func (ph *projects) SvnCommit(projectName, branchName, svnMessage string) error 
 	if err != nil {
 		return err
 	}
-	p.Svn.Lock()
-	defer p.Svn.Unlock()
-	if err := p.Git.SvnSync(branchName); err != nil {
+	p.svn.Lock()
+	defer p.svn.Unlock()
+	if err := p.git.SvnSync(branchName); err != nil {
 		return err
 	}
-	return p.Svn.Commit(svnMessage)
+	return p.svn.Commit(svnMessage)
 }
 
-func (ph *projects) SvnLog(projectName string, number int) (res []Logentry, err error) {
+func (ph *projects) SvnLog(projectName string, showNumber int) (res []Logentry, err error) {
 	p, err := ph.GetProject(projectName)
 	if err != nil {
 		return res, err
 	}
-	return p.Svn.Log(number)
+	return p.svn.Log(showNumber)
+}
+
+func (ph *projects) FtpLog(projectName, filter string) (res []Entry, err error) {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return res, err
+	}
+	return p.ftp.List(filter)
+}
+
+func (ph *projects) FtpReadFile(projectName, fileName string) (res []byte, err error) {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return res, err
+	}
+	return p.ftp.ReadFileContent(fileName)
+}
+
+func (ph *projects) FtpWriteFile(projectName, fileName, content string) error {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return err
+	}
+	return p.ftp.WriteFileContent(fileName, []byte(content))
 }
 
 func NewProject(conf []ProjectConfig, ctx context.Context) Project {
@@ -116,9 +143,9 @@ func NewProject(conf []ProjectConfig, ctx context.Context) Project {
 	}
 	for _, v := range conf {
 		p := &project{
-			Git: NewGitOperator(&v, ctx),
-			Svn: NewSvnOperator(&v, ctx),
-			Ftp: NewFtpOperator(v.Ftp),
+			git: NewGitOperator(&v, ctx),
+			svn: NewSvnOperator(&v, ctx),
+			ftp: NewFtpOperator(v.Ftp),
 		}
 		ph.Add(v.ProjectName, p)
 	}

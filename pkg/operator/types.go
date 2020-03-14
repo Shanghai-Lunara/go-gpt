@@ -45,6 +45,5 @@ type FtpConfig struct {
 	WorkDir string `yaml:"work_dir"`
 	Host    string `yaml:"host"`
 	Port    int    `yaml:"port"`
-
-	Timeout int `yaml:"timeout"`
+	Timeout int    `yaml:"timeout"`
 }

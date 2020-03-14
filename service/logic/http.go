@@ -3,6 +3,9 @@ package logic
 import (
 	"context"
 	"fmt"
+	"github.com/Shanghai-Lunara/go-gpt/conf"
+	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,6 +16,7 @@ import (
 )
 
 type HttpService struct {
+	c      conf.Config
 	server *http.Server
 	router Router
 }
@@ -50,12 +54,12 @@ func header() gin.HandlerFunc {
 	}
 }
 
-func (s *Service) InitHttpServer() *HttpService {
+func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *HttpService {
 	h := &HttpService{
-		router: NewRouter(s.Project),
+		router: NewRouter(operator.NewProject(c.Projects, ctx)),
 	}
 	router := gin.New()
-	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: s.Output}), gin.RecoveryWithWriter(s.Output))
+	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: writer}), gin.RecoveryWithWriter(writer))
 	router.Use(header())
 	router.GET(RouteGetGitAll, func(c *gin.Context) {
 		res, err := h.router.GetGitAll()
@@ -120,7 +124,7 @@ func (s *Service) InitHttpServer() *HttpService {
 		c.JSON(http.StatusOK, res)
 	})
 	h.server = &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", s.C.Http.IP, s.C.Http.Port),
+		Addr:    fmt.Sprintf("%s:%d", c.Http.IP, c.Http.Port),
 		Handler: router,
 	}
 	go func() {

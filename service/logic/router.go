@@ -153,7 +153,7 @@ type SetGitBranchSvnTagParam struct {
 //     Responses:
 //       200: CommonResponse
 func (r *router) SetGitBranchSvnTag(param *SetGitBranchSvnTagParam) (res HttpResponse, err error) {
-	err = r.project.SetGitBranchSvnTag(param.ProjectName, param.BranchName, param.SvnTag)
+	err = r.project.GitSetBranchSvnTag(param.ProjectName, param.BranchName, param.SvnTag)
 	if err != nil {
 		klog.V(2).Infof("SetGitBranchSvnTag cmd:%v err:%v", *param, err)
 		return res, err
