@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"k8s.io/klog"
+	"time"
 )
 
 type Project interface {
@@ -18,10 +20,24 @@ type Project interface {
 	FtpLog(projectName, filter string) (res []Entry, err error)
 	FtpReadFile(projectName, fileName string) (res []byte, err error)
 	FtpWriteFile(projectName, fileName, content string) error
+	FtpCompress(projectName, branchName, patchType, flags string) error
 }
 
 const (
 	errNotExistedProject = "the project: %s is not existed"
+)
+
+const (
+	zipypeAll    = "ser"
+	zipTypePatch = "pat"
+)
+
+const (
+	introduceTemplate = "introduce_%s.txt"
+	serverTemplate    = "HelixServer_%s.zip"
+	serverMd5Template = "HelixServer_%s.zip.txt"
+	versionTemplate   = "%s%s"
+	patchTemplate     = "patch_%s"
 )
 
 type project struct {
@@ -135,6 +151,48 @@ func (ph *projects) FtpWriteFile(projectName, fileName, content string) error {
 		return err
 	}
 	return p.ftp.WriteFileContent(fileName, []byte(content))
+}
+
+func (ph *projects) FtpCompress(projectName, branchName, patchType, flags string) error {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return err
+	}
+	p.git.RLock()
+	defer p.git.RUnlock()
+	version, err := p.ftp.GetNextVersion()
+	if err != nil {
+		return err
+	}
+	if err := p.git.FtpCompress(branchName, patchType, version, flags); err != nil {
+		return err
+	}
+	defer func() {
+		if err := p.git.Revert(); err != nil {
+			klog.V(2).Info(err)
+		}
+	}()
+	v := fmt.Sprintf(versionTemplate, time.Now().Format("20060102"), version)
+	introName := fmt.Sprintf(introduceTemplate, v)
+	if err := p.ftp.UploadFile(fmt.Sprintf("%s/%s", p.git.Conf().WorkDir, introName), introName); err != nil {
+		return err
+	}
+	switch patchType {
+	case zipypeAll:
+	case zipTypePatch:
+		v = fmt.Sprintf(patchTemplate, v)
+	}
+	zipName := fmt.Sprintf(serverTemplate, v)
+	klog.Info(zipName)
+	if err := p.ftp.UploadFile(fmt.Sprintf("%s/%s", p.git.Conf().WorkDir, zipName), zipName); err != nil {
+		return err
+	}
+	zipMd5Name := fmt.Sprintf(serverMd5Template, v)
+	klog.Info(zipMd5Name)
+	if err := p.ftp.UploadFile(fmt.Sprintf("%s/%s", p.git.Conf().WorkDir, zipMd5Name), zipMd5Name); err != nil {
+		return err
+	}
+	return nil
 }
 
 func NewProject(conf []ProjectConfig, ctx context.Context) Project {

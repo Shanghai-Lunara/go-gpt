@@ -15,10 +15,14 @@ import (
 )
 
 type GitOperator interface {
+	Conf() GitConfig
+	RLock()
+	RUnlock()
 	GetBranchFullName(name string) string
 	GetBranchShortName(name string) string
 	ExecuteWithArgs(args ...string) (res []byte, err error)
 	FetchAll() error
+	Revert() (err error)
 	ShowAll(lock bool) error
 	CheckOutBranch(name string) error
 	Generate(name string) error
@@ -28,6 +32,7 @@ type GitOperator interface {
 	Common(name string) error
 	SetSvnTag(name, tag string) error
 	SvnSync(name string) error
+	FtpCompress(name, patchType, version, flags string) error
 	ChangeTaskCount(incr int32)
 	LoopChan()
 	GetCurrentTask() string
@@ -54,12 +59,14 @@ const (
 
 	cmdGitCheckOut = "checkout"
 	cmdGitFetchAll = "fetch"
+	cmdGitRevert   = "revert"
 	cmdGitShowAll  = "showAll"
 	cmdGitGenerate = "generate"
 	cmdGitCommit   = "commit"
 	cmdGitPush     = "push"
 	cmdGitUpdate   = "update"
 	cmdSvnSync     = "svnSync"
+	cmdFtpCompress = "compress"
 )
 
 const (
@@ -68,9 +75,12 @@ const (
 )
 
 type git struct {
-	mu             sync.RWMutex
-	ScriptPath     string             `json:"script_path"`
-	Path           string             `json:"path"`
+	mu sync.RWMutex
+
+	conf GitConfig
+
+	ScriptPath string `json:"script_path"`
+
 	Name           string             `json:"name"`
 	RemoteBranches map[string]*Branch `json:"remote_branches"`
 	ListBranches   []string           `json:"list_branches"`
@@ -78,6 +88,18 @@ type git struct {
 	TaskChan       chan *Command
 	CurrentTask    *Command
 	ctx            context.Context
+}
+
+func (g *git) Conf() GitConfig {
+	return g.conf
+}
+
+func (g *git) RLock() {
+	g.mu.RLock()
+}
+
+func (g *git) RUnlock() {
+	g.mu.RUnlock()
 }
 
 func (g *git) GetBranchFullName(name string) string {
@@ -89,20 +111,31 @@ func (g *git) GetBranchShortName(name string) string {
 }
 
 func (g *git) ExecuteWithArgs(args ...string) (res []byte, err error) {
-	t := append([]string{g.ScriptPath, g.Path}, args...)
+	t := append([]string{g.ScriptPath, g.conf.WorkDir}, args...)
 	out, err := exec.Command("sh", t...).Output()
 	if err != nil {
 		return out, errors.New(fmt.Sprintf(errGitExec, args[0], err))
 	}
-	klog.Infof(execOutputTemplate, args[0], string(out))
+	if args[0] != cmdGitShowAll {
+		klog.Infof(execOutputTemplate, args[0], string(out))
+	}
 	return out, nil
 }
 
 func (g *git) FetchAll() (err error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	//g.mu.Lock()
+	//defer g.mu.Unlock()
 	_, err = g.ExecuteWithArgs(cmdGitFetchAll)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *git) Revert() (err error) {
+	_, err = g.ExecuteWithArgs(cmdGitRevert)
+	if err != nil {
+		klog.V(2).Info(err)
 		return err
 	}
 	return nil
@@ -204,11 +237,16 @@ func (g *git) Push(name string) (err error) {
 }
 
 func (g *git) Common(name string) (err error) {
-	if err = g.ShowAll(true); err != nil {
-		return err
-	}
+	//if err = g.ShowAll(true); err != nil {
+	//	return err
+	//}
 	g.mu.RLock()
 	defer g.mu.RUnlock()
+	defer func() {
+		if err := g.Revert(); err != nil {
+			klog.V(2).Info(err)
+		}
+	}()
 	if err = g.CheckOutBranch(name); err != nil {
 		return err
 	}
@@ -259,6 +297,19 @@ func (g *git) SvnSync(name string) (err error) {
 	}
 	_, err = g.ExecuteWithArgs(cmdSvnSync, t.SvnTag)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *git) FtpCompress(name, patchType, version, flags string) (err error) {
+	if err = g.CheckOutBranch(name); err != nil {
+		_ = g.Revert()
+		return err
+	}
+	_, err = g.ExecuteWithArgs(cmdFtpCompress, patchType, version, flags)
+	if err != nil {
+		_ = g.Revert()
 		return err
 	}
 	return nil
@@ -324,10 +375,12 @@ func (g *git) HandleCommand(c *Command) (err error) {
 			return err
 		}
 	case cmdGitUpdate:
+		g.mu.Lock()
+		defer g.mu.Unlock()
 		if err := g.FetchAll(); err != nil {
 			return err
 		}
-		if err := g.ShowAll(true); err != nil {
+		if err := g.ShowAll(false); err != nil {
 			return err
 		}
 	}
@@ -335,8 +388,8 @@ func (g *git) HandleCommand(c *Command) (err error) {
 }
 
 func (g *git) GetGitInfo() GitInfo {
-	g.mu.RLock()
-	defer g.mu.RUnlock()
+	g.RLock()
+	defer g.RUnlock()
 	gi := GitInfo{
 		Name:         g.Name,
 		ListBranches: make([]Branch, 0),
@@ -353,8 +406,8 @@ func (g *git) GetGitInfo() GitInfo {
 
 func NewGitOperator(v *ProjectConfig, ctx context.Context) GitOperator {
 	var git GitOperator = &git{
+		conf:           v.Git,
 		ScriptPath:     fmt.Sprintf("%s%s", v.ScriptsPath, gitScriptName),
-		Path:           v.Git.WorkDir,
 		Name:           v.ProjectName,
 		RemoteBranches: make(map[string]*Branch, 0),
 		ListBranches:   make([]string, 0),

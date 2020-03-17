@@ -23,6 +23,7 @@ type FtpOperator interface {
 	ReadFileContent(fileName string) (res []byte, err error)
 	WriteFileContent(fileName string, content []byte) (err error)
 	UploadFile(sourcePath, fileName string) (err error)
+	GetNextVersion() (version string, err error)
 }
 
 type ftp struct {
@@ -133,7 +134,7 @@ func (f *ftp) UploadFile(sourcePath, fileName string) (err error) {
 		return err
 	}
 	defer f.Quit(c)
-	file, err := os.Open(fmt.Sprintf("%s/%s", sourcePath, fileName))
+	file, err := os.Open(sourcePath)
 	if err != nil {
 		klog.V(2).Info(err)
 	}
@@ -143,30 +144,20 @@ func (f *ftp) UploadFile(sourcePath, fileName string) (err error) {
 	return nil
 }
 
+func (f *ftp) GetNextVersion() (version string, err error) {
+	res, err := f.List("")
+	if err != nil {
+		return GetNextVersionString(0), errors.New(fmt.Sprintf("List err:%v", err))
+	}
+	v := GetTodayVersionByFilter(res, "introduce", "txt")
+	return GetNextVersionString(v), nil
+}
+
 var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func NewFtpOperator(c FtpConfig) FtpOperator {
 	var f FtpOperator = &ftp{
 		conf: c,
-	}
-	if res, err := f.ReadFileContent("introduce_2020022602.txt"); err != nil {
-		klog.Info(err)
-	} else {
-		klog.Info(string(res))
-	}
-	if res, err := f.List("20200226"); err != nil {
-		klog.Infof("List err:%v", err)
-	} else {
-		t, err := json.Marshal(res)
-		if err != nil {
-			klog.Info(err)
-		}
-		klog.Info("t:", string(t))
-		v := GetTodayVersionByFilter(res, "introduce", "txt")
-		klog.Info("version:", v, " next-version:", GetNextVersionString(v))
-	}
-	if err := f.WriteFileContent("abc.txt", []byte("test\nabc1213")); err != nil {
-		klog.Info(err)
 	}
 	return f
 }
@@ -187,10 +178,12 @@ func GetTodayVersionByFilter(source []Entry, specNamePrefix, specNameSuffix stri
 		if len(res) < 2 {
 			continue
 		}
-		_, err = strconv.Atoi(res[1])
+		tmp, err := strconv.Atoi(res[1])
 		if err != nil {
 			klog.V(2).Info(err)
-			version = 0
+		}
+		if tmp > version {
+			version = tmp
 		}
 		klog.Infof("Filter version:%v", fmt.Sprintf("%d", version))
 	}

@@ -9,10 +9,14 @@ function showAll() {
     git branch -a | grep -v HEAD
 }
 
-function changeBranch() {
+function revert() {
     git add --all
     git checkout -f
     git reset --hard
+}
+
+function checkout() {
+    revert
     git checkout -B $1 --track $2
     exit 0
 }
@@ -45,8 +49,14 @@ function svnSync() {
     exit 0
 }
 
+function compress() {
+    ./zip.sh $1 $2 $3
+    ls | grep '.zip\|.txt'
+    exit 0
+}
+
 function error() {
-    echo "Usage: git.sh {git-path} {fetch|showAll|checkout|generate|commit|push|update|svnSync} {name}"
+    echo "Usage: git.sh {git-path} {fetch|revert|showAll|checkout|generate|commit|push|update|svnSync|compress} {name}"
     exit
 }
 
@@ -58,6 +68,9 @@ case "$2" in
     "fetch")
         fetch
         ;;
+     "revert")
+        revert
+        ;;
     "showAll")
         showAll
         ;;
@@ -65,7 +78,7 @@ case "$2" in
         if [[ -z "$3" ]] || [[ -z "$4" ]]; then
             error
         fi
-        changeBranch $3 $4
+        checkout $3 $4
         ;;
     "generate")
         generateData
@@ -84,6 +97,12 @@ case "$2" in
             error
         fi
         svnSync $3
+        ;;
+    "compress")
+        if [[ -z "$3" ]] || [[ -z "$4" ]] || [[ -z "$5" ]]; then
+            error
+        fi
+        compress $3 $4 $5
         ;;
     *)
         error
