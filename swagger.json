@@ -7,6 +7,166 @@
   },
   "host": "localhost",
   "paths": {
+    "/ftp/compress/{projectName}/{branchName}/{zipType}/{zipFlags}": {
+      "get": {
+        "description": "ftp compress",
+        "tags": [
+          "ftp",
+          "compress"
+        ],
+        "summary": "It would compress the project into zip with the specific flags and upload to the ftp server",
+        "operationId": "FtpCompress",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "BranchName",
+            "description": "BranchName",
+            "name": "branch_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "ZipType",
+            "description": "ZipType",
+            "name": "zip_type",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "ZipFlags",
+            "description": "ZipFlags",
+            "name": "zip_flags",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/CommonResponse"
+          }
+        }
+      }
+    },
+    "/ftp/log/{projectName}/{filter}": {
+      "get": {
+        "description": "ftp log",
+        "tags": [
+          "ftp",
+          "log"
+        ],
+        "summary": "It would pull ftp files from the remote ftp server with the specific filter",
+        "operationId": "FtpLog",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Filter",
+            "description": "Filter",
+            "name": "filter",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/FtpLogResponse"
+          }
+        }
+      }
+    },
+    "/ftp/read/{projectName}/{fileName}": {
+      "get": {
+        "description": "ftp read",
+        "tags": [
+          "ftp",
+          "read"
+        ],
+        "summary": "It would get the content of the specific file from the remote ftp server by the filter",
+        "operationId": "FtpReadFile",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "FileName",
+            "description": "FileName",
+            "name": "file_name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/FtpReadFileResponse"
+          }
+        }
+      }
+    },
+    "/ftp/write/{projectName}/{fileName}/{content}": {
+      "get": {
+        "description": "ftp write",
+        "tags": [
+          "ftp",
+          "write"
+        ],
+        "summary": "It would overwrite the specific file on the FTP server with the provided content",
+        "operationId": "FtpWriteFile",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "FileName",
+            "description": "FileName",
+            "name": "file_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Content",
+            "description": "Content",
+            "name": "content",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/CommonResponse"
+          }
+        }
+      }
+    },
     "/git/all": {
       "get": {
         "description": "This will return all gits' info",
@@ -29,7 +189,7 @@
           "git",
           "gen"
         ],
-        "summary": "It would generate code and commit to git with specific projectName and branchName",
+        "summary": "It would generate code and commit to git with the specific projectName and branchName",
         "operationId": "genSpecificGit",
         "parameters": [
           {
@@ -174,6 +334,32 @@
           }
         }
       }
+    },
+    "/task/all/{projectName}": {
+      "get": {
+        "description": "task all",
+        "tags": [
+          "task",
+          "all"
+        ],
+        "summary": "It would get all the tasks of the specific project",
+        "operationId": "TaskAll",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/TaskAllResponse"
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -192,6 +378,36 @@
         "svn_tag": {
           "type": "string",
           "x-go-name": "SvnTag"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
+    "Entry": {
+      "type": "object",
+      "title": "Entry describes a file and is returned by List().",
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-go-name": "Name"
+        },
+        "size": {
+          "type": "integer",
+          "format": "uint64",
+          "x-go-name": "Size"
+        },
+        "target": {
+          "type": "string",
+          "x-go-name": "Target"
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time",
+          "x-go-name": "Time"
+        },
+        "type": {
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Type"
         }
       },
       "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
@@ -305,6 +521,71 @@
         }
       }
     },
+    "FtpLogResponse": {
+      "description": "FtpLogResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "entries"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "entries": {
+            "description": "The list of ftp files",
+            "type": "array",
+            "items": {
+              "$ref": "#/definitions/Entry"
+            },
+            "x-go-name": "Entries"
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          }
+        }
+      }
+    },
+    "FtpReadFileResponse": {
+      "description": "FtpLogResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "content"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "content": {
+            "description": "The file content",
+            "type": "string",
+            "x-go-name": "Content"
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          }
+        }
+      }
+    },
     "GitAllResponse": {
       "description": "GitAllResponse",
       "schema": {
@@ -369,6 +650,36 @@
             "type": "string",
             "x-go-name": "Message",
             "example": "success"
+          }
+        }
+      }
+    },
+    "TaskAllResponse": {
+      "description": "FtpLogResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "tasks"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          },
+          "tasks": {
+            "description": "all tasks",
+            "x-go-name": "Tasks"
           }
         }
       }

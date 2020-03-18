@@ -37,10 +37,3 @@ func GetQuickErrorResponse(code int) HttpResponse {
 		Data:    map[string]interface{}{},
 	}
 }
-
-func (s *Service) Response() {
-
-}
-func (s *Service) Request() {
-
-}

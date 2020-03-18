@@ -23,7 +23,7 @@ type Project interface {
 	FtpWriteFile(projectName, fileName, content string) error
 	FtpCompress(projectName, branchName, zipType, zipFlags string) error // needed async
 	AsyncTask(c *Command) error
-	GetTasks(projectName string) (res map[int]Task, err error)
+	TaskAll(projectName string) (res map[int]Task, err error)
 }
 
 const (
@@ -208,7 +208,7 @@ func (ph *projects) AsyncTask(c *Command) error {
 	return nil
 }
 
-func (ph *projects) GetTasks(projectName string) (res map[int]Task, err error) {
+func (ph *projects) TaskAll(projectName string) (res map[int]Task, err error) {
 	p, err := ph.GetProject(projectName)
 	if err != nil {
 		return res, err
@@ -230,26 +230,6 @@ func NewProject(conf []ProjectConfig, ctx context.Context) Project {
 			ctx:    ctx,
 		}
 		ph.Add(v.ProjectName, p)
-		go func() {
-			//for {
-			time.Sleep(time.Second * 10)
-			klog.Info("start ************")
-			c := &Command{
-				ProjectName: "hero",
-				BranchName:  "leiting_200311_2.0.7",
-				Command:     TaskCmdFtpUpload,
-				ZipType:     ZipTypePatch,
-				ZipFlags:    "push/campaign",
-			}
-			if err := ph.AsyncTask(c); err != nil {
-				klog.V(2).Info(err)
-			}
-			klog.Info("end ************")
-
-			time.Sleep(time.Second * 15)
-			klog.Info("tasks:", p.tasks.GetAll())
-			//}
-		}()
 	}
 	return ph
 }

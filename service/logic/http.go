@@ -3,17 +3,20 @@ package logic
 import (
 	"context"
 	"fmt"
-	"github.com/Shanghai-Lunara/go-gpt/conf"
-	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Shanghai-Lunara/go-gpt/conf"
+	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
 	"github.com/gin-gonic/gin"
+	jsoniter "github.com/json-iterator/go"
 	"k8s.io/klog"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type HttpService struct {
 	c      conf.Config
@@ -118,6 +121,68 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 		}
 		klog.V(0).Infof("r:%s p:%v", RouteSvnLog, p)
 		res, err := h.router.SvnLog(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.GET(RouteFtpLog, func(c *gin.Context) {
+		p := &FtpLogParam{
+			ProjectName: c.Param("projectName"),
+			Filter:      c.Param("filter"),
+		}
+		klog.V(0).Infof("r:%s p:%v", RouteFtpLog, p)
+		res, err := h.router.FtpLog(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.GET(RouteFtpReadFile, func(c *gin.Context) {
+		p := &FtpReadFileParam{
+			ProjectName: c.Param("projectName"),
+			FileName:    c.Param("fileName"),
+		}
+		klog.V(0).Infof("r:%s p:%v", RouteFtpReadFile, p)
+		res, err := h.router.FtpReadFile(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.GET(RouteFtpWriteFile, func(c *gin.Context) {
+		p := &FtpWriteFileParam{
+			ProjectName: c.Param("projectName"),
+			FileName:    c.Param("fileName"),
+			Content:     c.Param("content"),
+		}
+		klog.V(0).Infof("r:%s p:%v", RouteFtpWriteFile, p)
+		res, err := h.router.FtpWriteFile(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.GET(RouteFtpCompress, func(c *gin.Context) {
+		p := &FtpCompressParam{
+			ProjectName: c.Param("projectName"),
+			BranchName:  c.Param("branchName"),
+			ZipType:     c.Param("zipType"),
+			ZipFlags:    c.Param("zipFlags"),
+		}
+		klog.V(0).Infof("r:%s p:%v", RouteFtpCompress, p)
+		res, err := h.router.FtpCompress(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.GET(RouteTaskAll, func(c *gin.Context) {
+		p := &TaskAllParam{
+			ProjectName: c.Param("projectName"),
+		}
+		klog.V(0).Infof("r:%s p:%v", RouteTaskAll, p)
+		res, err := h.router.TaskAll(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
 		}
