@@ -47,3 +47,15 @@ type FtpConfig struct {
 	Port    int    `yaml:"port"`
 	Timeout int    `yaml:"timeout"`
 }
+
+// Commands
+type Command struct {
+	ProjectName string `json:"project_name"`
+	BranchName  string `json:"branch_name"`
+	Command     string `json:"command"`
+	Message     string `json:"message"`
+	ZipType     string `json:"zip_type"`
+	ZipFlags    string `json:"zip_flags"`
+}
+
+// Tasks

@@ -14,6 +14,11 @@ import (
 	"k8s.io/klog"
 )
 
+type GitCmd struct {
+	cmd        string
+	branchName string
+}
+
 type GitOperator interface {
 	Conf() GitConfig
 	RLock()
@@ -35,9 +40,8 @@ type GitOperator interface {
 	FtpCompress(name, patchType, version, flags string) error
 	ChangeTaskCount(incr int32)
 	LoopChan()
-	GetCurrentTask() string
-	SendCommand(c *Command) (err error)
-	HandleCommand(c *Command) error
+	SendCommand(c *GitCmd) (err error)
+	HandleCommand(c *GitCmd) error
 	GetGitInfo() GitInfo
 }
 
@@ -85,8 +89,8 @@ type git struct {
 	RemoteBranches map[string]*Branch `json:"remote_branches"`
 	ListBranches   []string           `json:"list_branches"`
 	TaskCount      int32              `json:"task_count"`
-	TaskChan       chan *Command
-	CurrentTask    *Command
+	TaskChan       chan *GitCmd
+	CurrentTask    *GitCmd
 	ctx            context.Context
 }
 
@@ -335,22 +339,14 @@ func (g *git) LoopChan() {
 			g.ChangeTaskCount(-1)
 			g.CurrentTask = nil
 		case <-tick.C:
-			if err := g.SendCommand(&Command{command: cmdGitUpdate}); err != nil {
+			if err := g.SendCommand(&GitCmd{cmd: cmdGitUpdate}); err != nil {
 				klog.V(2).Infof("LoopChan SendCommand err:%v", err)
 			}
 		}
 	}
 }
 
-func (g *git) GetCurrentTask() string {
-	if g.CurrentTask == nil {
-		return "N/A"
-	} else {
-		return fmt.Sprintf("%s-%s-%s", g.CurrentTask.projectName, g.CurrentTask.branchName, g.CurrentTask.command)
-	}
-}
-
-func (g *git) SendCommand(c *Command) (err error) {
+func (g *git) SendCommand(c *GitCmd) (err error) {
 	g.ChangeTaskCount(1)
 	tick := time.NewTicker(time.Second * 1)
 	defer tick.Stop()
@@ -365,8 +361,8 @@ func (g *git) SendCommand(c *Command) (err error) {
 	}
 }
 
-func (g *git) HandleCommand(c *Command) (err error) {
-	switch c.command {
+func (g *git) HandleCommand(c *GitCmd) (err error) {
+	switch c.cmd {
 	case cmdGitGenerate:
 		if err := g.Common(c.branchName); err != nil {
 			return err
@@ -394,7 +390,6 @@ func (g *git) GetGitInfo() GitInfo {
 		Name:         g.Name,
 		ListBranches: make([]Branch, 0),
 		TaskCount:    g.TaskCount,
-		CurrentTask:  g.GetCurrentTask(),
 	}
 	for _, v := range g.ListBranches {
 		if t, ok := g.RemoteBranches[v]; ok {
@@ -412,11 +407,11 @@ func NewGitOperator(v *ProjectConfig, ctx context.Context) GitOperator {
 		RemoteBranches: make(map[string]*Branch, 0),
 		ListBranches:   make([]string, 0),
 		TaskCount:      0,
-		TaskChan:       make(chan *Command, 1024),
+		TaskChan:       make(chan *GitCmd, 1024),
 		ctx:            ctx,
 	}
 	go git.LoopChan()
-	if err := git.SendCommand(&Command{command: cmdGitUpdate}); err != nil {
+	if err := git.SendCommand(&GitCmd{cmd: cmdGitUpdate}); err != nil {
 		klog.V(2).Infof("NewGitOperator SendCommand err:%v", err)
 	}
 	return git

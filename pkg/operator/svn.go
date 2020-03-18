@@ -195,7 +195,7 @@ func (s *svn) Listener(ch chan *Command) {
 				return
 			}
 			klog.Infof("cmd:%v", *c)
-			if _, err := s.ExecuteWithArgs(c.command, c.message); err != nil {
+			if _, err := s.ExecuteWithArgs(c.Command, c.Message); err != nil {
 				klog.V(2).Infof("Listener exc err:%v", err)
 			}
 		case <-s.ctx.Done():

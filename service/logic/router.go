@@ -11,8 +11,11 @@ package logic
 
 import (
 	"github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+	jsoniter "github.com/json-iterator/go"
 	"k8s.io/klog"
 )
+
+var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type Router interface {
 	GetGitAll() (res HttpResponse, err error)

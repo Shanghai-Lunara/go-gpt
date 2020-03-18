@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"k8s.io/klog"
 	"time"
+
+	"k8s.io/klog"
 )
 
 type Project interface {
@@ -20,7 +21,9 @@ type Project interface {
 	FtpLog(projectName, filter string) (res []Entry, err error)
 	FtpReadFile(projectName, fileName string) (res []byte, err error)
 	FtpWriteFile(projectName, fileName, content string) error
-	FtpCompress(projectName, branchName, patchType, flags string) error
+	FtpCompress(projectName, branchName, zipType, zipFlags string) error // needed async
+	AsyncTask(c *Command) error
+	GetTasks(projectName string) (res map[int]Task, err error)
 }
 
 const (
@@ -28,8 +31,8 @@ const (
 )
 
 const (
-	zipypeAll    = "ser"
-	zipTypePatch = "pat"
+	ZipTypeAll   = "ser"
+	ZipTypePatch = "pat"
 )
 
 const (
@@ -44,6 +47,9 @@ type project struct {
 	git GitOperator
 	svn SvnOperator
 	ftp FtpOperator
+
+	worker Worker
+	tasks  *TaskHub
 
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -91,11 +97,9 @@ func (ph *projects) GitGenerate(projectName, branchName string) error {
 	if err != nil {
 		return err
 	}
-	c := &Command{
-		projectName: projectName,
-		branchName:  branchName,
-		command:     cmdGitGenerate,
-		message:     "",
+	c := &GitCmd{
+		cmd:        cmdGitGenerate,
+		branchName: branchName,
 	}
 	return p.git.SendCommand(c)
 }
@@ -153,7 +157,7 @@ func (ph *projects) FtpWriteFile(projectName, fileName, content string) error {
 	return p.ftp.WriteFileContent(fileName, []byte(content))
 }
 
-func (ph *projects) FtpCompress(projectName, branchName, patchType, flags string) error {
+func (ph *projects) FtpCompress(projectName, branchName, zipType, zipFlags string) error {
 	p, err := ph.GetProject(projectName)
 	if err != nil {
 		return err
@@ -164,7 +168,7 @@ func (ph *projects) FtpCompress(projectName, branchName, patchType, flags string
 	if err != nil {
 		return err
 	}
-	if err := p.git.FtpCompress(branchName, patchType, version, flags); err != nil {
+	if err := p.git.FtpCompress(branchName, zipType, version, zipFlags); err != nil {
 		return err
 	}
 	defer func() {
@@ -177,9 +181,9 @@ func (ph *projects) FtpCompress(projectName, branchName, patchType, flags string
 	if err := p.ftp.UploadFile(fmt.Sprintf("%s/%s", p.git.Conf().WorkDir, introName), introName); err != nil {
 		return err
 	}
-	switch patchType {
-	case zipypeAll:
-	case zipTypePatch:
+	switch zipType {
+	case ZipTypeAll:
+	case ZipTypePatch:
 		v = fmt.Sprintf(patchTemplate, v)
 	}
 	zipName := fmt.Sprintf(serverTemplate, v)
@@ -195,17 +199,57 @@ func (ph *projects) FtpCompress(projectName, branchName, patchType, flags string
 	return nil
 }
 
+func (ph *projects) AsyncTask(c *Command) error {
+	p, err := ph.GetProject(c.ProjectName)
+	if err != nil {
+		return err
+	}
+	p.worker.Add(p.tasks.NewTask(c))
+	return nil
+}
+
+func (ph *projects) GetTasks(projectName string) (res map[int]Task, err error) {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return res, err
+	}
+	return p.tasks.GetAll(), nil
+}
+
 func NewProject(conf []ProjectConfig, ctx context.Context) Project {
 	var ph Project = &projects{
 		projects: make(map[string]*project, 0),
 	}
 	for _, v := range conf {
 		p := &project{
-			git: NewGitOperator(&v, ctx),
-			svn: NewSvnOperator(&v, ctx),
-			ftp: NewFtpOperator(v.Ftp),
+			git:    NewGitOperator(&v, ctx),
+			svn:    NewSvnOperator(&v, ctx),
+			ftp:    NewFtpOperator(v.Ftp),
+			worker: NewWorker(ctx.Done(), ph),
+			tasks:  NewTaskHub(),
+			ctx:    ctx,
 		}
 		ph.Add(v.ProjectName, p)
+		go func() {
+			//for {
+			time.Sleep(time.Second * 10)
+			klog.Info("start ************")
+			c := &Command{
+				ProjectName: "hero",
+				BranchName:  "leiting_200311_2.0.7",
+				Command:     TaskCmdFtpUpload,
+				ZipType:     ZipTypePatch,
+				ZipFlags:    "push/campaign",
+			}
+			if err := ph.AsyncTask(c); err != nil {
+				klog.V(2).Info(err)
+			}
+			klog.Info("end ************")
+
+			time.Sleep(time.Second * 15)
+			klog.Info("tasks:", p.tasks.GetAll())
+			//}
+		}()
 	}
 	return ph
 }

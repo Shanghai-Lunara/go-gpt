@@ -12,7 +12,6 @@ import (
 	"time"
 
 	goftp "github.com/jlaffaye/ftp"
-	"github.com/json-iterator/go"
 	"k8s.io/klog"
 )
 
@@ -152,8 +151,6 @@ func (f *ftp) GetNextVersion() (version string, err error) {
 	v := GetTodayVersionByFilter(res, "introduce", "txt")
 	return GetNextVersionString(v), nil
 }
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 func NewFtpOperator(c FtpConfig) FtpOperator {
 	var f FtpOperator = &ftp{
