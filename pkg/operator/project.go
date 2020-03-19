@@ -97,11 +97,15 @@ func (ph *projects) GitGenerate(projectName, branchName string) error {
 	if err != nil {
 		return err
 	}
-	c := &GitCmd{
-		cmd:        cmdGitGenerate,
-		branchName: branchName,
+	p.git.RLock()
+	defer p.git.RUnlock()
+	if err := p.git.Common(branchName); err != nil {
+		return err
 	}
-	return p.git.SendCommand(c)
+	if err := p.git.Update(branchName); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (ph *projects) GitSetBranchSvnTag(projectName, branchName, svnTag string) error {

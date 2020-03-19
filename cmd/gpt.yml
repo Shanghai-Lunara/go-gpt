@@ -5,7 +5,6 @@ LogFile: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/log/gpt.log"
 HttpService:
   ip: "0.0.0.0"
   port: 8080
-  templates_path: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/templates/"
 
 Projects:
   - project_name: "projectName"

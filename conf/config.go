@@ -11,9 +11,8 @@ import (
 )
 
 type HttpConfig struct {
-	IP            string `yaml:"ip"`
-	Port          int    `yaml:"port"`
-	TemplatesPath string `yaml:"templates_path"`
+	IP   string `yaml:"ip"`
+	Port int    `yaml:"port"`
 }
 
 type Config struct {

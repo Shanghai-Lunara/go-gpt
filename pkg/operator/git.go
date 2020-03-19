@@ -184,6 +184,8 @@ func (g *git) ShowAll(lock bool) (err error) {
 			if t, ok := g.RemoteBranches[s]; ok {
 				if s == activeBranch {
 					t.Active = gitActive
+				} else {
+					t.Active = gitInActive
 				}
 				tmp[s] = t
 			} else {
@@ -244,8 +246,8 @@ func (g *git) Common(name string) (err error) {
 	//if err = g.ShowAll(true); err != nil {
 	//	return err
 	//}
-	g.mu.RLock()
-	defer g.mu.RUnlock()
+	//g.mu.RLock()
+	//defer g.mu.RUnlock()
 	defer func() {
 		if err := g.Revert(); err != nil {
 			klog.V(2).Info(err)
@@ -364,6 +366,8 @@ func (g *git) SendCommand(c *GitCmd) (err error) {
 func (g *git) HandleCommand(c *GitCmd) (err error) {
 	switch c.cmd {
 	case cmdGitGenerate:
+		g.mu.RLock()
+		defer g.mu.RUnlock()
 		if err := g.Common(c.branchName); err != nil {
 			return err
 		}
