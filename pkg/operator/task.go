@@ -77,10 +77,12 @@ func (th *TaskHub) GetAll() map[int]Task {
 	th.mu.RLock()
 	defer th.mu.RUnlock()
 	res := make(map[int]Task, len(th.Tasks))
-	for k, v := range th.Tasks {
-		v.mu.RLock()
-		res[k] = *v
-		v.mu.RUnlock()
+	for i := int(th.Max); i >= 1; i-- {
+		if t, ok := th.Tasks[i]; ok {
+			t.mu.RLock()
+			res[i] = *t
+			t.mu.RUnlock()
+		}
 	}
 	return res
 }

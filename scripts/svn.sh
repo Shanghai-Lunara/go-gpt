@@ -107,7 +107,7 @@ case "$5" in
             error
         fi
         cd $4
-        commit $1 $2 $6
+        commit $"1" $"2" "$6"
         ;;
     "update")
         cd $4

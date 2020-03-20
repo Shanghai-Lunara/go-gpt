@@ -50,7 +50,7 @@ function svnSync() {
 }
 
 function compress() {
-    ./zip.sh $1 $2 $3
+    ./zip.sh "$1" "$2" "$3"
     ls | grep '.zip\|.txt'
     exit 0
 }
@@ -102,7 +102,7 @@ case "$2" in
         if [[ -z "$3" ]] || [[ -z "$4" ]] || [[ -z "$5" ]]; then
             error
         fi
-        compress $3 $4 $5
+        compress "$3" "$4" "$5"
         ;;
     *)
         error

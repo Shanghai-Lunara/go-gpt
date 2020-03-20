@@ -393,7 +393,6 @@ func (g *git) GetGitInfo() GitInfo {
 	gi := GitInfo{
 		Name:         g.Name,
 		ListBranches: make([]Branch, 0),
-		TaskCount:    g.TaskCount,
 	}
 	for _, v := range g.ListBranches {
 		if t, ok := g.RemoteBranches[v]; ok {

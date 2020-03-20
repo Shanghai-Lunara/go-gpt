@@ -16,8 +16,6 @@ type GitConfig struct {
 type GitInfo struct {
 	Name         string   `json:"name"`
 	ListBranches []Branch `json:"list_branches"`
-	TaskCount    int32    `json:"task_count"`
-	CurrentTask  string   `json:"current_task"`
 }
 
 type Branch struct {
