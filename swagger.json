@@ -415,10 +415,6 @@
     "GitInfo": {
       "type": "object",
       "properties": {
-        "current_task": {
-          "type": "string",
-          "x-go-name": "CurrentTask"
-        },
         "list_branches": {
           "type": "array",
           "items": {
@@ -429,11 +425,6 @@
         "name": {
           "type": "string",
           "x-go-name": "Name"
-        },
-        "task_count": {
-          "type": "integer",
-          "format": "int32",
-          "x-go-name": "TaskCount"
         }
       },
       "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
