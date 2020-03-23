@@ -42,7 +42,7 @@ func (w *worker) processNextWorkItem() bool {
 	if shutdown {
 		return false
 	}
-	err := func(obj interface{}) error {
+	_ = func(obj interface{}) error {
 		defer w.workQueue.Done(obj)
 		var task *Task
 		var ok bool
@@ -52,6 +52,7 @@ func (w *worker) processNextWorkItem() bool {
 			return nil
 		}
 		if err := w.syncHandler(task); err != nil {
+			klog.V(2).Info("syncHandler err:", err)
 			defer task.ChangeStatus(TaskError)
 			//w.workQueue.AddRateLimited(task)
 			w.workQueue.Forget(obj)
@@ -61,9 +62,6 @@ func (w *worker) processNextWorkItem() bool {
 		klog.Infof("Successfully synced '%v'", task)
 		return nil
 	}(obj)
-	if err != nil {
-		klog.V(2).Info(err)
-	}
 	return true
 }
 

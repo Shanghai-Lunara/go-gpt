@@ -74,7 +74,9 @@ func (s *svn) ExecuteWithArgs(args ...string) (res []byte, err error) {
 	if err != nil {
 		return out, errors.New(fmt.Sprintf("Svn %s exec.Command err:%v\n", args[0], err))
 	}
-	klog.Infof("Svn Command `%s` output:\n%s\n", args[0], string(out))
+	if args[0] != cmdLog {
+		klog.Infof("Svn Command `%s` output:\n%s\n", args[0], string(out))
+	}
 	return out, nil
 }
 

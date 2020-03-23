@@ -76,7 +76,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			ProjectName: c.Param("projectName"),
 			BranchName:  c.Param("branchName"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteGitGenerate, p)
 		res, err := h.router.GitGenerate(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -89,7 +88,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			BranchName:  c.Param("branchName"),
 			SvnTag:      c.Param("svnTag"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteSetGitBranchSvnTag, p)
 		res, err := h.router.SetGitBranchSvnTag(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -102,7 +100,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			BranchName:  c.Param("branchName"),
 			SvnMessage:  c.Param("svnMsg"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteSvnCommit, p)
 		res, err := h.router.SvnCommit(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -119,7 +116,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			ProjectName: c.Param("projectName"),
 			LogNumber:   i,
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteSvnLog, p)
 		res, err := h.router.SvnLog(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -131,7 +127,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			ProjectName: c.Param("projectName"),
 			Filter:      c.Param("filter"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteFtpLog, p)
 		res, err := h.router.FtpLog(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -143,7 +138,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			ProjectName: c.Param("projectName"),
 			FileName:    c.Param("fileName"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteFtpReadFile, p)
 		res, err := h.router.FtpReadFile(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -156,7 +150,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			FileName:    c.Param("fileName"),
 			Content:     c.Param("content"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteFtpWriteFile, p)
 		res, err := h.router.FtpWriteFile(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -170,7 +163,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 			ZipType:     c.Param("zipType"),
 			ZipFlags:    c.Param("zipFlags"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteFtpCompress, p)
 		res, err := h.router.FtpCompress(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
@@ -181,7 +173,6 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 		p := &TaskAllParam{
 			ProjectName: c.Param("projectName"),
 		}
-		klog.V(0).Infof("r:%s p:%v", RouteTaskAll, p)
 		res, err := h.router.TaskAll(p)
 		if err != nil {
 			res = GetQuickErrorResponse(CodeUnknownError)
