@@ -144,11 +144,11 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 		}
 		c.JSON(http.StatusOK, res)
 	})
-	router.GET(RouteFtpWriteFile, func(c *gin.Context) {
+	router.POST(RouteFtpWriteFile, func(c *gin.Context) {
 		p := &FtpWriteFileParam{
-			ProjectName: c.Param("projectName"),
-			FileName:    c.Param("fileName"),
-			Content:     c.Param("content"),
+			ProjectName: c.PostForm("projectName"),
+			FileName:    c.PostForm("fileName"),
+			Content:     c.PostForm("content"),
 		}
 		res, err := h.router.FtpWriteFile(p)
 		if err != nil {

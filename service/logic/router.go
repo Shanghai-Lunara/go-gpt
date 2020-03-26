@@ -35,7 +35,7 @@ const (
 	RouteSvnLog             = "/svn/log/:projectName/:logNumber"
 	RouteFtpLog             = "/ftp/log/:projectName/:filter"
 	RouteFtpReadFile        = "/ftp/read/:projectName/:fileName"
-	RouteFtpWriteFile       = "/ftp/write/:projectName/:fileName/:content"
+	RouteFtpWriteFile       = "/ftp/write/:projectName"
 	RouteFtpCompress        = "/ftp/compress/:projectName/:branchName/:zipType/:zipFlags"
 	RouteTaskAll            = "/task/all/:projectName"
 )
@@ -374,7 +374,7 @@ type FtpWriteFileParam struct {
 	Content string `json:"content"`
 }
 
-// swagger:route GET /ftp/write/{projectName}/{fileName}/{content} ftp write FtpWriteFile
+// swagger:route POST /ftp/write ftp write FtpWriteFile
 //
 // It would overwrite the specific file on the FTP server with the provided content
 //

@@ -125,8 +125,8 @@
         }
       }
     },
-    "/ftp/write/{projectName}/{fileName}/{content}": {
-      "get": {
+    "/ftp/write": {
+      "post": {
         "description": "ftp write",
         "tags": [
           "ftp",
