@@ -35,7 +35,7 @@ const (
 	RouteSvnLog             = "/svn/log/:projectName/:logNumber"
 	RouteFtpLog             = "/ftp/log/:projectName/:filter"
 	RouteFtpReadFile        = "/ftp/read/:projectName/:fileName"
-	RouteFtpWriteFile       = "/ftp/write/:projectName"
+	RouteFtpWriteFile       = "/ftp/write"
 	RouteFtpCompress        = "/ftp/compress/:projectName/:branchName/:zipType/:zipFlags"
 	RouteTaskAll            = "/task/all/:projectName"
 )
