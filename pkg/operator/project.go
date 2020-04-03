@@ -123,7 +123,7 @@ func (ph *projects) SvnCommit(projectName, branchName, svnMessage string) error 
 	}
 	p.svn.Lock()
 	defer p.svn.Unlock()
-	if err := p.git.SvnSync(branchName); err != nil {
+	if err := p.git.SvnSync(branchName, p.svn.GetFullWorkDir()); err != nil {
 		return err
 	}
 	return p.svn.Commit(svnMessage)

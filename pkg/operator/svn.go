@@ -16,6 +16,7 @@ import (
 type SvnOperator interface {
 	Lock()
 	Unlock()
+	GetFullWorkDir() string
 	ExecuteWithArgs(args ...string) (res []byte, err error)
 	CheckOut() error
 	Update() error
@@ -66,6 +67,10 @@ func (s *svn) Lock() {
 
 func (s *svn) Unlock() {
 	s.mu.Unlock()
+}
+
+func (s *svn) GetFullWorkDir() string {
+	return fmt.Sprintf("%s/%s", s.WorkDir, s.RemoteDir)
 }
 
 func (s *svn) ExecuteWithArgs(args ...string) (res []byte, err error) {

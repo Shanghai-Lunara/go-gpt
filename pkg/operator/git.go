@@ -36,7 +36,7 @@ type GitOperator interface {
 	Update(name string) error
 	Common(name string) error
 	SetSvnTag(name, tag string) error
-	SvnSync(name string) error
+	SvnSync(name, svnWorkDir string) error
 	FtpCompress(name, patchType, version, flags string) error
 	ChangeTaskCount(incr int32)
 	LoopChan()
@@ -287,7 +287,7 @@ func (g *git) SetSvnTag(name, tag string) (err error) {
 	return nil
 }
 
-func (g *git) SvnSync(name string) (err error) {
+func (g *git) SvnSync(name, svnWorkDir string) (err error) {
 	g.mu.RLock()
 	defer g.mu.RUnlock()
 	t, ok := g.RemoteBranches[name]
@@ -301,7 +301,7 @@ func (g *git) SvnSync(name string) (err error) {
 	if err != nil {
 		return err
 	}
-	_, err = g.ExecuteWithArgs(cmdSvnSync, t.SvnTag)
+	_, err = g.ExecuteWithArgs(cmdSvnSync, t.SvnTag, svnWorkDir)
 	if err != nil {
 		return err
 	}

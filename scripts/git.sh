@@ -45,7 +45,7 @@ function update() {
 }
 
 function svnSync() {
-    ./deploy_svn.sh $1
+    ./deploy_svn.sh $1 $2
     exit 0
 }
 
@@ -93,10 +93,10 @@ case "$2" in
         update
         ;;
     "svnSync")
-        if [[ -z "$3" ]]; then
+        if [[ -z "$3" ]] || [[ -z "$4" ]]; then
             error
         fi
-        svnSync $3
+        svnSync $3 $4
         ;;
     "compress")
         if [[ -z "$3" ]] || [[ -z "$4" ]] || [[ -z "$5" ]]; then
