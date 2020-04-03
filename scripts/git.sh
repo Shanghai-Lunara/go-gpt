@@ -37,6 +37,7 @@ function commit() {
 function push() {
     git pull
     git push --all
+    exit 0
 }
 
 function update() {
