@@ -1,11 +1,12 @@
 package operator
 
 type ProjectConfig struct {
-	ProjectName string    `yaml:"project_name"`
-	ScriptsPath string    `yaml:"scripts_path"`
-	Git         GitConfig `yaml:"git"`
-	Svn         SvnConfig `yaml:"svn"`
-	Ftp         FtpConfig `yaml:"ftp"`
+	ProjectName string          `yaml:"project_name"`
+	ScriptsPath string          `yaml:"scripts_path"`
+	Git         GitConfig       `yaml:"git"`
+	Svn         SvnConfig       `yaml:"svn"`
+	Ftp         FtpConfig       `yaml:"ftp"`
+	Oss         AliYunOssConfig `yaml:"oss"`
 }
 
 // git types
@@ -56,4 +57,17 @@ type Command struct {
 	ZipFlags    string `json:"zip_flags"`
 }
 
-// Tasks
+// AliYunOss types
+type AliYunOssConfig struct {
+	EndPoint        string         `yaml:"end_point"`
+	Bucket          string         `yaml:"bucket"`
+	AccessKeyID     string         `yaml:"access_key_id"`
+	AccessKeySecret string         `yaml:"access_key_secret"`
+	FileDirectory   string         `yaml:"file_directory"`
+	Envs            []AliYunOssEnv `yaml:"envs"`
+}
+
+type AliYunOssEnv struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}

@@ -19,7 +19,7 @@ var fakeFtpConfig = FtpConfig{
 }
 
 func Test_ftp_Conn(t *testing.T) {
-	mock, c := openConn(t, fmt.Sprintf("%s%d", fakeFtpConfig.Host, fakeFtpConfig.Port), goftp.DialWithTimeout(5*time.Second))
+	mock, c := openConn(t, fmt.Sprintf("%s:%d", fakeFtpConfig.Host, fakeFtpConfig.Port), goftp.DialWithTimeout(5*time.Second))
 	_ = mock
 	_ = c
 	type fields struct {

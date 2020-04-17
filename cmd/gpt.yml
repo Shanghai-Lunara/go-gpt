@@ -25,3 +25,16 @@ Projects:
       host: "192.168.1.2"
       port: 22
       timeout: 30
+    oss:
+      end_point: "cloud-domain.com"
+      bucket: "bucket-domain.com"
+      access_key_id: "keyid"
+      access_key_secret: "keysecret"
+      file_directory: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/oss/"
+      envs:
+        - name: "dev"
+          value: "dev"
+        - name: "test"
+          value: "test"
+        - name: "product"
+          value: "product"

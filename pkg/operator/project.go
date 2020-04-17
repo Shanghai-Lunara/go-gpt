@@ -47,6 +47,7 @@ type project struct {
 	git GitOperator
 	svn SvnOperator
 	ftp FtpOperator
+	oss AliYunOss
 
 	worker Worker
 	tasks  *TaskHub
@@ -229,6 +230,7 @@ func NewProject(conf []ProjectConfig, ctx context.Context) Project {
 			git:    NewGitOperator(&v, ctx),
 			svn:    NewSvnOperator(&v, ctx),
 			ftp:    NewFtpOperator(v.Ftp),
+			oss:    NewAliYunOss(v.Oss, ctx),
 			worker: NewWorker(ctx.Done(), ph),
 			tasks:  NewTaskHub(),
 			ctx:    ctx,
