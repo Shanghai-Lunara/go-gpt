@@ -2,10 +2,14 @@ package operator
 
 import (
 	"context"
-	"k8s.io/klog"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"strings"
 	"sync"
 
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
+	"k8s.io/klog"
 )
 
 type AliYunOss interface {
@@ -14,9 +18,13 @@ type AliYunOss interface {
 	CreateBucket(bucketName string) error
 	DeleteBucket(bucketName string) error
 	Bucket(bucketName string) (b *oss.Bucket, err error)
-	PutObject(bucketName, objectName, fileDir string) error
+	PutObject(bucketName, objectName string, content []byte) error
+	GetObject(bucketName, objectName string) (content []byte, err error)
 	ListObjects(bucketName string) (lsRes oss.ListObjectsResult, err error)
-	DeleteObjects(bucketName, objectName string) error
+	DeleteObject(bucketName, objectName string) error
+	GetEnvs() (res map[string]string)
+	GetContent(bucketName, env string) (nc NoticeContent, err error)
+	UpdateContent(bucketName, env string, nc NoticeContent) error
 }
 
 func NewAliYunOss(conf AliYunOssConfig, ctx context.Context) AliYunOss {
@@ -57,7 +65,7 @@ func (ays *aliYunOss) CreateBucket(bucketName string) error {
 	if err != nil {
 		return err
 	}
-	err = client.CreateBucket(bucketName)
+	err = client.CreateBucket(bucketName, oss.ACL(oss.ACLPublicReadWrite))
 	if err != nil {
 		klog.V(2).Info(err)
 	}
@@ -88,16 +96,29 @@ func (ays *aliYunOss) Bucket(bucketName string) (b *oss.Bucket, err error) {
 	return b, err
 }
 
-func (ays *aliYunOss) PutObject(bucketName, objectName, fileDir string) error {
+func (ays *aliYunOss) PutObject(bucketName, objectName string, content []byte) error {
 	b, err := ays.Bucket(bucketName)
 	if err != nil {
 		return err
 	}
-	err = b.PutObjectFromFile(objectName, fileDir)
+	err = b.PutObject(objectName, strings.NewReader(string(content)), oss.ACL(oss.ACLPublicReadWrite))
 	if err != nil {
 		klog.V(2).Info(err)
 	}
 	return err
+}
+
+func (ays *aliYunOss) GetObject(bucketName, objectName string) (content []byte, err error) {
+	b, err := ays.Bucket(bucketName)
+	if err != nil {
+		return content, err
+	}
+	body, err := b.GetObject(objectName, oss.ACL(oss.ACLPublicReadWrite))
+	content, err = ioutil.ReadAll(body)
+	if err = body.Close(); err != nil {
+		klog.V(2).Info(err)
+	}
+	return content, err
 }
 
 func (ays *aliYunOss) ListObjects(bucketName string) (lsRes oss.ListObjectsResult, err error) {
@@ -112,14 +133,62 @@ func (ays *aliYunOss) ListObjects(bucketName string) (lsRes oss.ListObjectsResul
 	return lsRes, err
 }
 
-func (ays *aliYunOss) DeleteObjects(bucketName, objectName string) error {
+func (ays *aliYunOss) DeleteObject(bucketName, objectName string) error {
 	b, err := ays.Bucket(bucketName)
 	if err != nil {
 		return err
 	}
-	err = b.DeleteObject(objectName)
+	err = b.DeleteObject(objectName, oss.ACL(oss.ACLPublicReadWrite))
 	if err != nil {
 		klog.V(2).Info(err)
 	}
 	return err
+}
+
+func (ays *aliYunOss) GetEnvs() (res map[string]string) {
+	res = make(map[string]string, 0)
+	for _, v := range ays.conf.Envs {
+		res[v.Name] = fmt.Sprintf("%s/%s", ays.conf.ProxyUrl, v.Value)
+	}
+	return res
+}
+
+func (ays *aliYunOss) GetContent(bucketName, env string) (nc NoticeContent, err error) {
+	tmp, err := ays.GetObject(bucketName, fmt.Sprintf("%s.json", env))
+	if err != nil {
+		return nc, nil
+	}
+	err = json.Unmarshal(tmp, &nc)
+	if err != nil {
+		klog.V(2).Info(err)
+	}
+	return nc, nil
+}
+
+func (ays *aliYunOss) UpdateContent(bucketName, env string, nc NoticeContent) error {
+	// update {env}.json
+	data, err := json.Marshal(nc)
+	if err != nil {
+		klog.V(2).Info(err)
+		return err
+	}
+	err = ays.PutObject(bucketName, fmt.Sprintf("%s.json", env), []byte(data))
+	if err != nil {
+		klog.V(2).Info(err)
+		return err
+	}
+	// update deb/{env}.html
+	tmp, err := ays.GetObject(bucketName, "index.html")
+	if err != nil {
+		return err
+	}
+	str := strings.Replace(string(tmp), "{{title}}", nc.Title, -1)
+	str = strings.Replace(str, "{{time}}", nc.Time, -1)
+	str = strings.Replace(str, "{{content}}", nc.Content, -1)
+	err = ays.PutObject(bucketName, fmt.Sprintf("dev/%s.html", env), []byte(str))
+	if err != nil {
+		klog.V(2).Info(err)
+		return err
+	}
+	return nil
 }

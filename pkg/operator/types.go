@@ -63,6 +63,7 @@ type AliYunOssConfig struct {
 	Bucket          string         `yaml:"bucket"`
 	AccessKeyID     string         `yaml:"access_key_id"`
 	AccessKeySecret string         `yaml:"access_key_secret"`
+	ProxyUrl        string         `yaml:"proxy_url"`
 	FileDirectory   string         `yaml:"file_directory"`
 	Envs            []AliYunOssEnv `yaml:"envs"`
 }
@@ -70,4 +71,10 @@ type AliYunOssConfig struct {
 type AliYunOssEnv struct {
 	Name  string `yaml:"name"`
 	Value string `yaml:"value"`
+}
+
+type NoticeContent struct {
+	Title   string `json:"title"`
+	Time    string `json:"time"`
+	Content string `json:"content"`
 }

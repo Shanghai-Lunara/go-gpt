@@ -30,6 +30,7 @@ Projects:
       bucket: "bucket-domain.com"
       access_key_id: "keyid"
       access_key_secret: "keysecret"
+      proxy_url: "http://xxx.xxx.xxx"
       file_directory: "/Users/nevermore/go/src/github.com/Shanghai-Lunara/go-gpt/oss/"
       envs:
         - name: "dev"
