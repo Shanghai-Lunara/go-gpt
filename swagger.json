@@ -258,6 +258,124 @@
         }
       }
     },
+    "/oss/content/{projectName}/{env}": {
+      "get": {
+        "description": "This will return the specific object's content in oss",
+        "tags": [
+          "oss",
+          "envs"
+        ],
+        "summary": "get oss envs",
+        "operationId": "OssContent",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Env",
+            "description": "Env",
+            "name": "env",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/OssContentResponse"
+          }
+        }
+      }
+    },
+    "/oss/envs/{projectName}": {
+      "get": {
+        "description": "This will return the specific project's oss environments",
+        "tags": [
+          "oss",
+          "envs"
+        ],
+        "summary": "get oss envs",
+        "operationId": "OssEnvs",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/OssEnvsResponse"
+          }
+        }
+      }
+    },
+    "/oss/update": {
+      "post": {
+        "description": "ftp write",
+        "tags": [
+          "oss",
+          "update"
+        ],
+        "summary": "It would overwrite the specific file on the oss server with the provided content",
+        "operationId": "OssUpdate",
+        "parameters": [
+          {
+            "type": "string",
+            "x-go-name": "ProjectName",
+            "description": "ProjectName",
+            "name": "project_name",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Env",
+            "description": "Env",
+            "name": "env",
+            "in": "path",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Title",
+            "description": "Title",
+            "name": "title",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Time",
+            "description": "Time",
+            "name": "time",
+            "in": "query",
+            "required": true
+          },
+          {
+            "type": "string",
+            "x-go-name": "Content",
+            "description": "Content",
+            "name": "content",
+            "in": "query",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/responses/CommonResponse"
+          }
+        }
+      }
+    },
     "/svn/commit/{projectName}/{branchName}/{svnMessage}": {
       "get": {
         "description": "scn commit",
@@ -382,6 +500,37 @@
       },
       "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
     },
+    "Command": {
+      "description": "Command",
+      "type": "object",
+      "properties": {
+        "branch_name": {
+          "type": "string",
+          "x-go-name": "BranchName"
+        },
+        "command": {
+          "type": "string",
+          "x-go-name": "Command"
+        },
+        "message": {
+          "type": "string",
+          "x-go-name": "Message"
+        },
+        "project_name": {
+          "type": "string",
+          "x-go-name": "ProjectName"
+        },
+        "zip_flags": {
+          "type": "string",
+          "x-go-name": "ZipFlags"
+        },
+        "zip_type": {
+          "type": "string",
+          "x-go-name": "ZipType"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
     "Entry": {
       "type": "object",
       "title": "Entry describes a file and is returned by List().",
@@ -459,6 +608,25 @@
       },
       "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
     },
+    "NoticeContent": {
+      "description": "NoticeContent",
+      "type": "object",
+      "properties": {
+        "content": {
+          "type": "string",
+          "x-go-name": "Content"
+        },
+        "time": {
+          "type": "string",
+          "x-go-name": "Time"
+        },
+        "title": {
+          "type": "string",
+          "x-go-name": "Title"
+        }
+      },
+      "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
     "Path": {
       "type": "object",
       "properties": {
@@ -484,9 +652,38 @@
         }
       },
       "x-go-package": "github.com/Shanghai-Lunara/go-gpt/pkg/operator"
+    },
+    "RWMutex": {
+      "description": "A RWMutex must not be copied after first use.\n\nIf a goroutine holds a RWMutex for reading and another goroutine might\ncall Lock, no goroutine should expect to be able to acquire a read lock\nuntil the initial read lock is released. In particular, this prohibits\nrecursive read locking. This is to ensure that the lock eventually becomes\navailable; a blocked Lock call excludes new readers from acquiring the\nlock.",
+      "type": "object",
+      "title": "A RWMutex is a reader/writer mutual exclusion lock.\nThe lock can be held by an arbitrary number of readers or a single writer.\nThe zero value for a RWMutex is an unlocked mutex.",
+      "x-go-package": "sync"
     }
   },
   "responses": {
+    "Command": {
+      "description": "Command",
+      "headers": {
+        "branch_name": {
+          "type": "string"
+        },
+        "command": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "project_name": {
+          "type": "string"
+        },
+        "zip_flags": {
+          "type": "string"
+        },
+        "zip_type": {
+          "type": "string"
+        }
+      }
+    },
     "CommonResponse": {
       "description": "CommonResponse",
       "schema": {
@@ -611,6 +808,83 @@
         }
       }
     },
+    "NoticeContent": {
+      "description": "NoticeContent",
+      "headers": {
+        "content": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "OssContentResponse": {
+      "description": "OssContentResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "notice_content"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          },
+          "notice_content": {
+            "$ref": "#/definitions/NoticeContent"
+          }
+        }
+      }
+    },
+    "OssEnvsResponse": {
+      "description": "OssEnvsResponse",
+      "schema": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "envs"
+        ],
+        "properties": {
+          "code": {
+            "description": "The BaseResponse code",
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Code",
+            "example": 100001
+          },
+          "envs": {
+            "description": "envs",
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "x-go-name": "Envs"
+          },
+          "message": {
+            "description": "The BaseResponse message",
+            "type": "string",
+            "x-go-name": "Message",
+            "example": "success"
+          }
+        }
+      }
+    },
     "SvnLogResponse": {
       "description": "SvnLogResponse",
       "schema": {
@@ -642,6 +916,30 @@
             "x-go-name": "Message",
             "example": "success"
           }
+        }
+      }
+    },
+    "Task": {
+      "description": "Task",
+      "schema": {
+        "$ref": "#/definitions/Command"
+      },
+      "headers": {
+        "command": {},
+        "id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "message": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mu": {},
+        "status": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },

@@ -3,6 +3,7 @@ package operator
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"strings"
@@ -26,6 +27,10 @@ type AliYunOss interface {
 	GetContent(bucketName, env string) (nc NoticeContent, err error)
 	UpdateContent(bucketName, env string, nc NoticeContent) error
 }
+
+const (
+	errEnvWasNotExisted = "the env name:%s was not existed"
+)
 
 func NewAliYunOss(conf AliYunOssConfig, ctx context.Context) AliYunOss {
 	var ays AliYunOss = &aliYunOss{
@@ -148,12 +153,33 @@ func (ays *aliYunOss) DeleteObject(bucketName, objectName string) error {
 func (ays *aliYunOss) GetEnvs() (res map[string]string) {
 	res = make(map[string]string, 0)
 	for _, v := range ays.conf.Envs {
-		res[v.Name] = fmt.Sprintf("%s/%s", ays.conf.ProxyUrl, v.Value)
+		res[v.Name] = fmt.Sprintf("%s/dev/%s.html", ays.conf.ProxyUrl, v.Value)
 	}
 	return res
 }
 
+func (ays *aliYunOss) CheckEnv(env string) error {
+	match := false
+	for _, v := range ays.conf.Envs {
+		if v.Name == env {
+			match = true
+		}
+	}
+	if match == true {
+		return nil
+	}
+	err := errors.New(fmt.Sprintf(errEnvWasNotExisted, env))
+	klog.V(2).Info(err)
+	return err
+}
+
 func (ays *aliYunOss) GetContent(bucketName, env string) (nc NoticeContent, err error) {
+	if err = ays.CheckEnv(env); err != nil {
+		return nc, err
+	}
+	if bucketName == "" {
+		bucketName = ays.conf.BucketName
+	}
 	tmp, err := ays.GetObject(bucketName, fmt.Sprintf("%s.json", env))
 	if err != nil {
 		return nc, nil
@@ -166,6 +192,12 @@ func (ays *aliYunOss) GetContent(bucketName, env string) (nc NoticeContent, err 
 }
 
 func (ays *aliYunOss) UpdateContent(bucketName, env string, nc NoticeContent) error {
+	if err := ays.CheckEnv(env); err != nil {
+		return err
+	}
+	if bucketName == "" {
+		bucketName = ays.conf.BucketName
+	}
 	// update {env}.json
 	data, err := json.Marshal(nc)
 	if err != nil {

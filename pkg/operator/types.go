@@ -47,7 +47,8 @@ type FtpConfig struct {
 	Timeout int    `yaml:"timeout"`
 }
 
-// Commands
+// Command
+// swagger:response Command
 type Command struct {
 	ProjectName string `json:"project_name"`
 	BranchName  string `json:"branch_name"`
@@ -65,6 +66,7 @@ type AliYunOssConfig struct {
 	AccessKeySecret string         `yaml:"access_key_secret"`
 	ProxyUrl        string         `yaml:"proxy_url"`
 	FileDirectory   string         `yaml:"file_directory"`
+	BucketName      string         `yaml:"bucket_name"`
 	Envs            []AliYunOssEnv `yaml:"envs"`
 }
 
@@ -73,6 +75,8 @@ type AliYunOssEnv struct {
 	Value string `yaml:"value"`
 }
 
+// NoticeContent
+// swagger:response NoticeContent
 type NoticeContent struct {
 	Title   string `json:"title"`
 	Time    string `json:"time"`

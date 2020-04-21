@@ -25,6 +25,9 @@ type Router interface {
 	FtpWriteFile(param *FtpWriteFileParam) (res HttpResponse, err error)
 	FtpCompress(param *FtpCompressParam) (res HttpResponse, err error)
 	TaskAll(param *TaskAllParam) (res HttpResponse, err error)
+	OssEnvs(param *OssEnvsParam) (res HttpResponse, err error)
+	OssContent(param *OssContentParam) (res HttpResponse, err error)
+	OssUpdate(param *OssUpdateParam) (res HttpResponse, err error)
 }
 
 const (
@@ -38,6 +41,9 @@ const (
 	RouteFtpWriteFile       = "/ftp/write"
 	RouteFtpCompress        = "/ftp/compress/:projectName/:branchName/:zipType/:zipFlags"
 	RouteTaskAll            = "/task/all/:projectName"
+	RouteOssEnvs            = "/oss/envs/:projectName"
+	RouteOssContent         = "/oss/content/:projectName/:env"
+	RouteOssUpdate          = "/oss/update"
 )
 
 type router struct {
@@ -484,4 +490,142 @@ func NewRouter(p operator.Project) Router {
 		project: p,
 	}
 	return r
+}
+
+// swagger:parameters OssEnvs
+type OssEnvsParam struct {
+	// ProjectName
+	//
+	// Required: true
+	// in: path
+	ProjectName string `json:"project_name"`
+}
+
+// OssEnvsResponse
+// swagger:response OssEnvsResponse
+type OssEnvsResponse struct {
+	// The all gits' full info
+	// in: body
+	Body struct {
+		SwaggerResponse
+		// envs
+		//
+		// Required: true
+		// An optional field name to which this validation applies
+		Envs map[string]string `json:"envs"`
+	}
+}
+
+// swagger:route GET /oss/envs/{projectName} oss envs OssEnvs
+//
+// get oss envs
+//
+// This will return the specific project's oss environments
+//
+//     Responses:
+//       200: OssEnvsResponse
+func (r *router) OssEnvs(param *OssEnvsParam) (res HttpResponse, err error) {
+	ret, err := r.project.OssEnvs(param.ProjectName)
+	if err != nil {
+		klog.V(2).Infof("OssEnvs err:", err)
+		return res, err
+	}
+	return GetQuickResponse(ret), nil
+}
+
+// swagger:parameters OssContent
+type OssContentParam struct {
+	// ProjectName
+	//
+	// Required: true
+	// in: path
+	ProjectName string `json:"project_name"`
+	// Env
+	//
+	// Required: true
+	// in: path
+	Env string `json:"env"`
+}
+
+// OssContentResponse
+// swagger:response OssContentResponse
+type OssContentResponse struct {
+	// The all gits' full info
+	// in: body
+	Body struct {
+		SwaggerResponse
+		// content
+		//
+		// Required: true
+		// An optional field name to which this validation applies
+		NoticeContent operator.NoticeContent `json:"notice_content"`
+	}
+}
+
+// swagger:route GET /oss/content/{projectName}/{env} oss envs OssContent
+//
+// get oss envs
+//
+// This will return the specific object's content in oss
+//
+//     Responses:
+//       200: OssContentResponse
+func (r *router) OssContent(param *OssContentParam) (res HttpResponse, err error) {
+	ret, err := r.project.OssContent(param.ProjectName, param.Env)
+	if err != nil {
+		klog.V(2).Infof("OssContent err:", err)
+		return res, err
+	}
+	return GetQuickResponse(ret), nil
+}
+
+// swagger:parameters OssUpdate
+type OssUpdateParam struct {
+	// ProjectName
+	//
+	// Required: true
+	// in: path
+	ProjectName string `json:"project_name"`
+	// Env
+	//
+	// Required: true
+	// in: path
+	Env string `json:"env"`
+	// Title
+	//
+	// Required: true
+	// in: Title
+	Title string `json:"title"`
+	// Time
+	//
+	// Required: true
+	// in: Time
+	Time string `json:"time"`
+	// Content
+	//
+	// Required: true
+	// in: Content
+	Content string `json:"content"`
+}
+
+// swagger:route POST /oss/update oss update OssUpdate
+//
+// It would overwrite the specific file on the oss server with the provided content
+//
+// ftp write
+//
+//     Responses:
+//       200: CommonResponse
+func (r *router) OssUpdate(param *OssUpdateParam) (res HttpResponse, err error) {
+	nc := operator.NoticeContent{
+		Title:   param.Title,
+		Content: param.Content,
+		Time:    param.Time,
+	}
+	err = r.project.OssUpdateContent(param.ProjectName, param.Env, nc)
+	if err != nil {
+		klog.V(2).Infof("OssUpdate cmd:%v err:%v", *param, err)
+		return res, err
+	}
+	return GetQuickResponse(map[string]interface{}{}), nil
 }

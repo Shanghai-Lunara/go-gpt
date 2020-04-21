@@ -20,6 +20,8 @@ const (
 	TaskCmdFtpUpload = "ftpUpload"
 )
 
+// Task
+// swagger:response Task
 type Task struct {
 	mu sync.RWMutex
 

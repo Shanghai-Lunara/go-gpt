@@ -179,6 +179,41 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 		}
 		c.JSON(http.StatusOK, res)
 	})
+	router.GET(RouteOssEnvs, func(c *gin.Context) {
+		p := &OssEnvsParam{
+			ProjectName: c.Param("projectName"),
+		}
+		res, err := h.router.OssEnvs(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.GET(RouteOssContent, func(c *gin.Context) {
+		p := &OssContentParam{
+			ProjectName: c.Param("projectName"),
+			Env:         c.Param("env"),
+		}
+		res, err := h.router.OssContent(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
+	router.POST(RouteOssUpdate, func(c *gin.Context) {
+		p := &OssUpdateParam{
+			ProjectName: c.PostForm("projectName"),
+			Env:         c.PostForm("env"),
+			Title:       c.PostForm("title"),
+			Time:        c.DefaultPostForm("time", time.Now().Format("2006-01-02 15:04:05")),
+			Content:     c.PostForm("content"),
+		}
+		res, err := h.router.OssUpdate(p)
+		if err != nil {
+			res = GetQuickErrorResponse(CodeUnknownError)
+		}
+		c.JSON(http.StatusOK, res)
+	})
 	h.server = &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", c.Http.IP, c.Http.Port),
 		Handler: router,

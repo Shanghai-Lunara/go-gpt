@@ -24,6 +24,9 @@ type Project interface {
 	FtpCompress(projectName, branchName, zipType, zipFlags string) error // needed async
 	AsyncTask(c *Command) error
 	TaskAll(projectName string) (res map[int]Task, err error)
+	OssEnvs(projectName string) (res map[string]string, err error)
+	OssContent(projectName, env string) (nc NoticeContent, err error)
+	OssUpdateContent(projectName, env string, nc NoticeContent) error
 }
 
 const (
@@ -219,6 +222,30 @@ func (ph *projects) TaskAll(projectName string) (res map[int]Task, err error) {
 		return res, err
 	}
 	return p.tasks.GetAll(), nil
+}
+
+func (ph *projects) OssEnvs(projectName string) (res map[string]string, err error) {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return res, err
+	}
+	return p.oss.GetEnvs(), nil
+}
+
+func (ph *projects) OssContent(projectName, env string) (nc NoticeContent, err error) {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return nc, err
+	}
+	return p.oss.GetContent("", env)
+}
+
+func (ph *projects) OssUpdateContent(projectName, env string, nc NoticeContent) error {
+	p, err := ph.GetProject(projectName)
+	if err != nil {
+		return err
+	}
+	return p.oss.UpdateContent("", env, nc)
 }
 
 func NewProject(conf []ProjectConfig, ctx context.Context) Project {
