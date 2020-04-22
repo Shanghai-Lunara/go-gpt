@@ -209,7 +209,7 @@ func (ays *aliYunOss) UpdateContent(bucketName, env string, nc NoticeContent) er
 		klog.V(2).Info(err)
 		return err
 	}
-	// update deb/{env}.html
+	// update dev/{env}.html
 	tmp, err := ays.GetObject(bucketName, "index.html")
 	if err != nil {
 		return err

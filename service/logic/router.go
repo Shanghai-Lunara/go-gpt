@@ -367,12 +367,12 @@ type FtpWriteFileParam struct {
 	//
 	// Required: true
 	// in: path
-	ProjectName string `json:"project_name"`
+	ProjectName string `json:"projectName"`
 	// FileName
 	//
 	// Required: true
 	// in: path
-	FileName string `json:"file_name"`
+	FileName string `json:"fileName"`
 	// Content
 	//
 	// Required: true
@@ -585,7 +585,7 @@ type OssUpdateParam struct {
 	//
 	// Required: true
 	// in: path
-	ProjectName string `json:"project_name"`
+	ProjectName string `json:"projectName"`
 	// Env
 	//
 	// Required: true

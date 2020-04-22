@@ -139,7 +139,7 @@
             "type": "string",
             "x-go-name": "ProjectName",
             "description": "ProjectName",
-            "name": "project_name",
+            "name": "projectName",
             "in": "path",
             "required": true
           },
@@ -147,7 +147,7 @@
             "type": "string",
             "x-go-name": "FileName",
             "description": "FileName",
-            "name": "file_name",
+            "name": "fileName",
             "in": "path",
             "required": true
           },
@@ -332,7 +332,7 @@
             "type": "string",
             "x-go-name": "ProjectName",
             "description": "ProjectName",
-            "name": "project_name",
+            "name": "projectName",
             "in": "path",
             "required": true
           },
