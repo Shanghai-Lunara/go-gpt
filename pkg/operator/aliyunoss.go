@@ -119,6 +119,10 @@ func (ays *aliYunOss) GetObject(bucketName, objectName string) (content []byte, 
 		return content, err
 	}
 	body, err := b.GetObject(objectName, oss.ACL(oss.ACLPublicReadWrite))
+	if err != nil {
+		klog.V(2).Info(err)
+		return content, err
+	}
 	content, err = ioutil.ReadAll(body)
 	if err = body.Close(); err != nil {
 		klog.V(2).Info(err)
