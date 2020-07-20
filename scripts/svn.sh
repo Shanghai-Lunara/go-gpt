@@ -35,7 +35,7 @@ function clean() {
 
 function commit() {
     addAll $1 $2
-    svn --username $1 --password $2 commit --message "${3} committed by ${1}@go-gpt"
+    svn --username $1 --password $2 commit --message "${3} - committed by ${1}@go-gpt"
 }
 
 function update() {
