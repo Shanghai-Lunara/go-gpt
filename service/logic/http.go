@@ -3,6 +3,7 @@ package logic
 import (
 	"context"
 	"fmt"
+	"github.com/gin-contrib/cors"
 	"io"
 	"net/http"
 	"strconv"
@@ -63,7 +64,7 @@ func InitHttpServer(c *conf.Config, writer io.Writer, ctx context.Context) *Http
 	}
 	router := gin.New()
 	router.Use(gin.LoggerWithConfig(gin.LoggerConfig{Output: writer}), gin.RecoveryWithWriter(writer))
-	router.Use(header())
+	router.Use(cors.Default())
 	router.GET(RouteGetGitAll, func(c *gin.Context) {
 		res, err := h.router.GetGitAll()
 		if err != nil {
