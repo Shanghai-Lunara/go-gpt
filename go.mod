@@ -6,7 +6,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v2.0.8+incompatible
 	github.com/baiyubin/aliyun-sts-go-sdk v0.0.0-20180326062324-cfa1a18b161f // indirect
 	github.com/gin-contrib/cors v1.3.1
-	github.com/gin-gonic/gin v1.7.0
+	github.com/gin-gonic/gin v1.7.7
 	github.com/jlaffaye/ftp v0.0.0-20200309171336-6841a2daa0d5
 	github.com/json-iterator/go v1.1.9
 	github.com/satori/go.uuid v1.2.0 // indirect
